@@ -718,7 +718,7 @@ Rigidbody2D:
   m_Interpolate: 1
   m_SleepingMode: 1
   m_CollisionDetection: 1
-  m_Constraints: 4
+  m_Constraints: 0
 --- !u!212 &577717266
 SpriteRenderer:
   serializedVersion: 2
@@ -838,22 +838,6 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 577717269}
         m_TargetAssemblyTypeName: PlayerMovement, Assembly-CSharp
-        m_MethodName: Parry
-        m_Mode: 0
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-    m_ActionId: 7f57c948-a9ec-4a25-b3ac-553c8e159f46
-    m_ActionName: 'PlayerMovement/Parry[/Keyboard/q]'
-  - m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 577717269}
-        m_TargetAssemblyTypeName: PlayerMovement, Assembly-CSharp
         m_MethodName: Move
         m_Mode: 0
         m_Arguments:
@@ -944,7 +928,7 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  groundCheckDistance: 0.4
+  groundCheckDistance: 0.05
 --- !u!60 &577717270
 PolygonCollider2D:
   m_ObjectHideFlags: 0
@@ -1008,7 +992,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GroundRayDebug
   col: {fileID: 577717270}
-  rayDistance: 0.4
+  rayDistance: 0.05
   groundMask:
     serializedVersion: 2
     m_Bits: 64
