@@ -6,6 +6,7 @@ public class GroundRayDebug : MonoBehaviour
     public PolygonCollider2D col;
     public float rayDistance = 0.2f;
     public LayerMask groundMask;
+    public PlayerMovement player;
 
     void OnDrawGizmos()
     {
@@ -47,5 +48,55 @@ public class GroundRayDebug : MonoBehaviour
             Gizmos.color = Color.yellow;
             Gizmos.DrawSphere(midPoint, 0.02f);
         }
+
+        /*Bounds bounds = col.bounds;
+
+        Vector2 origin = bounds.center;
+        Vector2 size = bounds.size;
+        Vector2 direction = player.gravity.normalized;
+
+        // Starting cast box
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireCube(origin, size);
+
+        // Direction line
+        Vector2 endPosition = origin + direction * rayDistance;
+
+        Gizmos.color = Color.white;
+        Gizmos.DrawLine(origin, endPosition);
+
+        // Final box position
+        Gizmos.color = Color.cyan;
+        Gizmos.DrawWireCube(endPosition, size);
+
+        // Actual BoxCast hit
+        RaycastHit2D hitb = Physics2D.BoxCast(
+            origin,
+            size,
+            0f,
+            direction,
+            rayDistance,
+            groundMask
+        );
+
+        if (hitb.collider != null)
+        {
+            // Hit point
+            Gizmos.color = Color.green;
+            Gizmos.DrawSphere(hitb.point, 0.05f);
+
+            // Surface normal
+            Gizmos.DrawLine(
+                hitb.point,
+                hitb.point + hitb.normal * 0.3f
+            );
+        }
+
+        // Gravity vector from center (for sanity checking)
+        Gizmos.color = Color.red;
+        Gizmos.DrawLine(
+            origin,
+            origin + direction * 0.5f
+        );*/
     }
 }
