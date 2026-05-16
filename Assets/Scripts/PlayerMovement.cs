@@ -86,7 +86,6 @@ public class PlayerMovement : MonoBehaviour
         {
             player = movement;
             player.jumpAvalailable = false;
-            Debug.Log("Entered falling state");
         }
         override public void CheckConditions()
         {
@@ -94,8 +93,8 @@ public class PlayerMovement : MonoBehaviour
         }
         override public void UpdatePlayer()
         {
-            player.verticalVector = Vector2.down;
-            player.horizontalVector = Vector2.zero;
+            player.verticalVector = Vector2.down * player.gravityForce;
+            player.horizontalVector = player.inputVector * player.movementSpeed;
         }
     }
 
@@ -105,15 +104,30 @@ public class PlayerMovement : MonoBehaviour
         PlayerMovement player;
         private float elapsedCoyoteTime = 0f;
         private Vector2 gravity;
+        bool waitingOnJumpUp;
         public GroundedState(PlayerMovement movement)
         {
             player = movement;
-            player.jumpAvalailable = true;
             gravity = player.gravity;
+            if (player.takingOff) {
+                player.jumpAvalailable = false;
+                waitingOnJumpUp = true;
+            }
+            else {
+                player.jumpAvalailable = true;
+                waitingOnJumpUp = false;
+            }
             Debug.Log("Entered grounded state");
         }
         override public void CheckConditions()
         {
+            if (waitingOnJumpUp)
+            {
+                if (!player.takingOff) {
+                    player.jumpAvalailable = true;
+                    waitingOnJumpUp = false;
+                }
+            }
             bool grounded = player.IsOnSurface();
             if (!grounded)
             {
@@ -134,11 +148,11 @@ public class PlayerMovement : MonoBehaviour
                 return;
             }
             elapsedCoyoteTime = 0;
-            if (player.takingOff) player.playerState = new JumpingState(player);
+            if (player.takingOff && !waitingOnJumpUp) player.playerState = new JumpingState(player);
         }
         override public void UpdatePlayer()
         {
-            player.verticalVector = Vector2.zero;
+            player.verticalVector = player.gravity;
             player.horizontalVector = player.movementSpeed * Vector2.Dot(player.groundSurface, player.inputVector) * player.groundSurface;
         }
     } 
@@ -152,7 +166,6 @@ public class PlayerMovement : MonoBehaviour
         {
             player = movement;
             player.jumpAvalailable = false;
-            Debug.Log("Entered jumping state");
         }
         override public void CheckConditions()
         {
@@ -163,7 +176,7 @@ public class PlayerMovement : MonoBehaviour
         }
         override public void UpdatePlayer()
         {
-            player.verticalVector = -player.gravity;
+            player.verticalVector = -player.gravity * player.gravityForce;
             player.horizontalVector = player.movementSpeed * Vector2.Dot(player.groundSurface, player.inputVector) * player.groundSurface;
         }
     } 
@@ -178,16 +191,17 @@ public class PlayerMovement : MonoBehaviour
         private int localFaceIndex;
         private Vector2 stickingPoint;
         private float distanceToStickingPoint; //0 if current corner, 1 if next corner, between that otherwise
+        private Vector2 lastMovementVector;
         public StickingState(PlayerMovement movement)
         {
             player = movement;
             player.jumpAvalailable = false;
             targetHitbox = player.currentSurface;
             stickingPoint = player.contactPoint;
+            lastMovementVector = (player.verticalVector + player.horizontalVector).normalized;
 
             ResolveStickingPrerequisites(player.currentSurface, player.contactPoint);
             Debug.Log("Entered sticking state");
-            //Debug.Log("Targetnormal: " + targetNormal + "Targetindex: " + targetIndex + "localFaceIndex: " + localFaceIndex + "stickingPoint: " + stickingPoint + "d to sp: " + distanceToStickingPoint);
         }
         override public void CheckConditions()
         {
@@ -198,9 +212,12 @@ public class PlayerMovement : MonoBehaviour
             Vector2 currentNormal = new Vector2(-edge.y, edge.x).normalized;
             Vector2 midpoint = (a + b) / 2f;
             if (Vector2.Dot(currentNormal, midpoint - (Vector2)player.transform.position) < 0f) currentNormal = -currentNormal;
-            if (Vector2.Dot(-currentNormal, targetNormal) > 0.99995f) player.playerState = new GroundedState(player); 
+            if (Vector2.Dot(-currentNormal, targetNormal) > 0.99995f) {
+                player.playerState = new GroundedState(player);
+                player.gravity = -targetNormal;
+            }
         }
-        override public void UpdatePlayer() //We need contact point before continuing
+        override public void UpdatePlayer() //Resolve movement based landing on flat surface, resolve no center contact after correction
         {
             player.verticalVector = Vector2.zero;
             player.horizontalVector = Vector2.zero;
@@ -213,7 +230,7 @@ public class PlayerMovement : MonoBehaviour
             if (Vector2.Dot(currentNormal, midpoint - (Vector2)player.transform.position) < 0f) currentNormal = -currentNormal;
             Vector2 desiredNormal = -targetNormal;
             float angleDelta = Vector2.SignedAngle(currentNormal, desiredNormal);
-            float rotateSpeed = 10f;
+            float rotateSpeed = 360f;
             float step = rotateSpeed * Time.deltaTime;
             float rotationThisFrame = Mathf.Clamp(angleDelta, -step, step);
             Vector2 offset = (Vector2)player.transform.position - stickingPoint;
@@ -232,13 +249,11 @@ public class PlayerMovement : MonoBehaviour
             int triangleFaceIndex;
             if (!triangleCorner) { //If hit with face, identify index of face
                 localFaceIndex = ResolveTriangleContact(contactPoint, out distanceToStickingPoint);
-                Debug.Log("Hit with triangle face");
             }
             else
             {
                 if (surfaceCorner) //corner - corner
                 {
-                    Debug.Log("triangle corner surface corner");
                     //on object hitbox, get the corner and work out vector to adjacent adjacent, going out from the corner we hit to get target edge
                     Vector2[] surfacePoints = surfaceHitbox.points; 
                     int nextCornerIndex;
@@ -270,7 +285,6 @@ public class PlayerMovement : MonoBehaviour
                 }
                 else // triangle corner - object face
                 {
-                    Debug.Log("Triangle corner object face");
                     // get adjacent corners, compute outward vectors, dot product, take best magnitude 
                     Vector2[] points = player.collider.points; //retrieve outward vectors from triangle corner
                     Vector2 prevPoint = player.collider.transform.TransformPoint(points[(cornerIndex - 1 + points.Length) % points.Length]);
@@ -282,6 +296,22 @@ public class PlayerMovement : MonoBehaviour
                     targetEdge.Normalize();
                     float prevDot = Mathf.Abs(Vector2.Dot(targetEdge, prev)); //take magnitude of dot product
                     float nextDot = Mathf.Abs(Vector2.Dot(targetEdge, next));
+
+                    Vector2 movementAlongSurface = Vector2.Dot(lastMovementVector, targetEdge) * targetEdge;
+
+
+                    if (movementAlongSurface.sqrMagnitude > 0.001f)
+                    {
+                        movementAlongSurface.Normalize();
+
+                        float prevMoveDot = Vector2.Dot(prev, movementAlongSurface);
+                        float nextMoveDot = Vector2.Dot(next, movementAlongSurface);
+                        float movementBias = 0.25f;
+
+                        prevDot += prevMoveDot * movementBias;
+                        nextDot += nextMoveDot * movementBias;
+                    }
+
                     if (prevDot >= nextDot) {
                         localFaceIndex = (cornerIndex - 1 + points.Length) % points.Length;
                         distanceToStickingPoint = 1f;
@@ -338,7 +368,7 @@ public class PlayerMovement : MonoBehaviour
                     targetIndex = i; //current index and +1 gets you the face from the object polygon
                 }
             }
-            return bestMatch > 0.95f; // Whether we actually found a match or just the most similar 
+            return bestMatch > 0.9995f; // Whether we actually found a match or just the most similar 
         } 
 
         private int ResolveCornerFace(PolygonCollider2D surfaceHitbox, Vector2 contactPoint, List<Vector2> surfaceNormals, Vector2 receivedNormal) //Resolves landing on corner
@@ -350,7 +380,7 @@ public class PlayerMovement : MonoBehaviour
             Vector2 centerOffset = triangleCenter - surfaceHitbox.points[closestPointIndex]; //Vector from corner to triangle center
             float prevSimilarity = Vector2.Dot(centerOffset, cornerNormals[0]); //Compare against both normals
             float nextSimilarity = Vector2.Dot(centerOffset, cornerNormals[1]);
-            if (Mathf.Abs(prevSimilarity - nextSimilarity) <= 0.15f) //Uncertain region
+            if (Mathf.Abs(prevSimilarity - nextSimilarity) <= 0.05f) //Uncertain region
             {
                 prevSimilarity = Vector2.Dot(receivedNormal, cornerNormals[0]); //compare contact normal instead
                 nextSimilarity = Vector2.Dot(receivedNormal, cornerNormals[1]);
@@ -411,7 +441,6 @@ public class PlayerMovement : MonoBehaviour
             {
                 Vector2 worldPoint = player.collider.transform.TransformPoint(points[i]);
                 float distance = Vector2.Distance(contactPoint, worldPoint); //Finds which corner is closest to the reported contact point
-                Debug.Log("corner: " + i + " distance: " + distance);
                 if (distance <= cornerTolerance) //if close enough, we know it's that one, we save the index and return true
                 {
                     cornerIndex = i;
@@ -426,7 +455,6 @@ public class PlayerMovement : MonoBehaviour
             int faceIndex = -1;
             Vector2[] points = player.collider.points;
             float bestDistance = float.MaxValue;
-            float tolerance = 0.05f;
             distanceAlongEdge = 0;
             for (int i = 0; i < points.Length; i++)
             {
