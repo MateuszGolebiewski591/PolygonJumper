@@ -17,36 +17,25 @@ public class PlayerMovement : MonoBehaviour
     private Vector2 groundSurface =  Vector2.zero;
     private Vector2 inputVector = Vector2.zero;
     [SerializeField] float groundMovementSpeed = 7.5f;
-    [SerializeField] float airMovementSpeed = 10f;
     private float movementSpeed = 0f;
 
     [Header("edge detection")]
-    private Vector2 activeEdgeA;
-    private Vector2 activeEdgeB;
-    [SerializeField] public Vector2 gravity = Vector2.down;
-    private Vector2 gravitySource;
-    private FaceData currentFace = default;
+    private Vector2 gravity = Vector2.down;
     [SerializeField] float edgeThickness = 0.1f;
     private PolygonCollider2D currentSurface; 
     private Vector2 contactPoint;
 
 
     [SerializeField] float gravityForce = 9.81f; 
-    [SerializeField] float terminalVelocity = 10f;
 
     [Header("Jump Parameters")]
-    private bool jumping = false;
-    private bool jumpButtonDown = false;
     private bool jumpAvalailable = true;
     private float jumpTimeElapsed = 0f;
-    private bool takingOff = false;
+    private bool jumpButtonDown = false;
     [SerializeField] float maxJumpTime = 2f;
-    [SerializeField] float jumpScalar = 100f;
     [SerializeField] float coyoteTime = 0.2f;
-    private float elapsedCoyoteTime = 0f;
 
     [Header("Other")]
-    private Coroutine jumpTimer;
     [SerializeField] private AnimationCurve jumpCurve;
     [SerializeField] private float groundCheckDistance = 0.1f;
     private PlayerStateNum state = PlayerStateNum.Falling;
@@ -58,16 +47,6 @@ public class PlayerMovement : MonoBehaviour
         Jumping,
         Falling,
         Sticking,
-    }
-
-    private struct FaceData
-    {
-        public Vector2 a;
-        public Vector2 b;
-        public Vector2 midpoint;
-        public Vector2 normal;
-        public Vector2 tangent;
-        public float length;
     }
 
     abstract private class PlayerState
@@ -82,14 +61,18 @@ public class PlayerMovement : MonoBehaviour
     {
         public PlayerStateNum state = PlayerStateNum.Falling;
         PlayerMovement player;
+        private float minimumFallTimer = 0.2f;
+        private float elapsedFallTime = 0;
         public FallingState(PlayerMovement movement)
         {
             player = movement;
             player.jumpAvalailable = false;
+            player.state = state;
         }
         override public void CheckConditions()
         {
-            if (player.IsOnSurface()) player.playerState = new StickingState(player);//new GroundedState(player);
+            elapsedFallTime += Time.deltaTime;
+            if (player.IsOnSurface() && elapsedFallTime >= minimumFallTimer) player.playerState = new StickingState(player);
         }
         override public void UpdatePlayer()
         {
@@ -102,14 +85,17 @@ public class PlayerMovement : MonoBehaviour
     {
         public PlayerStateNum state = PlayerStateNum.Grounded;
         PlayerMovement player;
-        private float elapsedCoyoteTime = 0f;
-        private Vector2 gravity;
-        bool waitingOnJumpUp;
+        private bool waitingOnJumpUp;
+        private int localFaceIndex;
+        private bool correctionState = false;
+        private Vector2 targetNormal = Vector2.zero;
+        private int targetIndex = 0;
+        private Vector2 stickingPoint = Vector2.zero;
+        private bool postCorrectionState = false;
         public GroundedState(PlayerMovement movement)
         {
             player = movement;
-            gravity = player.gravity;
-            if (player.takingOff) {
+            if (player.jumpButtonDown) {
                 player.jumpAvalailable = false;
                 waitingOnJumpUp = true;
             }
@@ -117,43 +103,129 @@ public class PlayerMovement : MonoBehaviour
                 player.jumpAvalailable = true;
                 waitingOnJumpUp = false;
             }
-            Debug.Log("Entered grounded state");
+            player.IsOnSurface();
         }
+
+        public void DefineLocalFaceIndex(int face) {localFaceIndex = face;}
         override public void CheckConditions()
         {
+            if (correctionState)
+            {
+                Vector2[] points = player.collider.points;
+                Vector2 a = player.collider.transform.TransformPoint(points[localFaceIndex]);
+                Vector2 b = player.collider.transform.TransformPoint(points[(localFaceIndex + 1) % points.Length]);
+                Vector2 edge = b - a;
+                Vector2 currentNormal = new Vector2(-edge.y, edge.x).normalized;
+                Vector2 midpoint = (a + b) / 2f;
+                if (Vector2.Dot(currentNormal, midpoint - (Vector2)player.transform.position) < 0f) currentNormal = -currentNormal;
+                if (Vector2.Dot(-currentNormal, targetNormal) > 0.99995f) {
+                    correctionState = false;
+                    postCorrectionState = true;
+                }
+                else return;
+            }
             if (waitingOnJumpUp)
             {
-                if (!player.takingOff) {
+                if (!player.jumpButtonDown) {
                     player.jumpAvalailable = true;
                     waitingOnJumpUp = false;
                 }
             }
-            bool grounded = player.IsOnSurface();
-            if (!grounded)
+            player.IsOnSurface();
+            bool supported = HasSupport();
+            if (supported && postCorrectionState) postCorrectionState = false;
+            if (!supported && !postCorrectionState)
             {
-                if (!player.takingOff)
+                Vector2[] surfacePoints = player.currentSurface.points;
+                int closestCorner = -1;
+                float closestDistance = float.MaxValue;
+
+                for (int i = 0; i < surfacePoints.Length; i++)
                 {
-                    elapsedCoyoteTime += Time.deltaTime;
+                    Vector2 worldPoint = player.currentSurface.transform.TransformPoint(surfacePoints[i]);
+                    float distance = Vector2.Distance(player.transform.position, worldPoint);
+                    if (distance < closestDistance)
+                    {
+                        closestDistance = distance;
+                        closestCorner = i;
+                    }
+                }
+                int prevFace = (closestCorner - 1 + surfacePoints.Length) % surfacePoints.Length;
+                int nextFace = closestCorner;
+                Vector2 prevNormal = GetSurfaceNormal(prevFace);
+                Vector2 nextNormal = GetSurfaceNormal(nextFace);
+                float prevDot = Vector2.Dot(prevNormal, -player.gravity);
+                float nextDot = Vector2.Dot(nextNormal, -player.gravity);
+                if (prevDot > nextDot)
+                {
+                    targetNormal = nextNormal;
+                    targetIndex = nextFace;
                 }
                 else
                 {
-                    player.playerState = new JumpingState(player);
-                    return;
+                    targetNormal = prevNormal;
+                    targetIndex = prevFace;
                 }
-                if (elapsedCoyoteTime > player.coyoteTime)
-                {
-                    player.playerState = new FallingState(player);
-                    return;
-                }
+                stickingPoint = player.currentSurface.transform.TransformPoint(surfacePoints[closestCorner]);
+                correctionState = true;
                 return;
             }
-            elapsedCoyoteTime = 0;
-            if (player.takingOff && !waitingOnJumpUp) player.playerState = new JumpingState(player);
+            if (player.jumpButtonDown && !waitingOnJumpUp) player.playerState = new JumpingState(player);
         }
         override public void UpdatePlayer()
         {
-            player.verticalVector = player.gravity;
-            player.horizontalVector = player.movementSpeed * Vector2.Dot(player.groundSurface, player.inputVector) * player.groundSurface;
+            if (correctionState)
+            {
+                player.verticalVector = Vector2.zero;
+                player.horizontalVector = Vector2.zero;
+                Vector2[] points = player.collider.points;
+                Vector2 a = player.collider.transform.TransformPoint(points[localFaceIndex]);
+                Vector2 b = player.collider.transform.TransformPoint(points[(localFaceIndex + 1) % points.Length]);
+                Vector2 edge = b - a;
+                Vector2 currentNormal = new Vector2(-edge.y, edge.x).normalized;
+                Vector2 midpoint = (a + b) / 2f;
+                if (Vector2.Dot(currentNormal, midpoint - (Vector2)player.transform.position) < 0f) currentNormal = -currentNormal;
+                Vector2 desiredNormal = -targetNormal;
+                float angleDelta = Vector2.SignedAngle(currentNormal, desiredNormal);
+                float rotateSpeed = 720f;
+                float step = rotateSpeed * Time.deltaTime;
+                float rotationThisFrame = Mathf.Clamp(angleDelta, -step, step);
+                Vector2 offset = (Vector2)player.transform.position - stickingPoint;
+                Vector2 rotatedOffset = Quaternion.Euler(0f, 0f, rotationThisFrame) * offset;
+                Vector2 newPosition = stickingPoint + rotatedOffset;
+                player.transform.Rotate(0f, 0f, rotationThisFrame);
+                player.transform.position = newPosition;
+            }
+            else
+            {
+                player.verticalVector = player.gravity;
+                player.horizontalVector = player.movementSpeed * Vector2.Dot(player.groundSurface, player.inputVector) * player.groundSurface;
+            }
+            
+        }
+
+        private bool HasSupport()
+        {
+            Vector2[] points = player.collider.points;
+            Vector2 vA = player.collider.transform.TransformPoint(points[localFaceIndex]);
+            Vector2 vB = player.collider.transform.TransformPoint(points[(localFaceIndex + 1) % points.Length]);
+            Vector2 midpoint = (vA + vB) * 0.5f;
+            Vector2 edge = vB - vA;
+            Vector2 normal = player.gravity.normalized;
+            RaycastHit2D hit = Physics2D.Raycast(midpoint, normal, 0.2f, player.groundLayer);
+            return hit.collider != null;
+        }
+
+        private Vector2 GetSurfaceNormal(int index)
+        {
+            Vector2[] surfacePoints = player.currentSurface.points;
+            Vector2 a = player.currentSurface.transform.TransformPoint(surfacePoints[index]);
+            Vector2 b = player.currentSurface.transform.TransformPoint(surfacePoints[(index + 1) % surfacePoints.Length]);
+            Vector2 edge = b - a;
+            Vector2 currentNormal = new Vector2(-edge.y, edge.x).normalized;
+            Vector2 midpoint = (a + b) / 2f;
+            if (Vector2.Dot(currentNormal, midpoint - (Vector2)player.currentSurface.bounds.center) < 0f) currentNormal = -currentNormal;
+            return currentNormal;
         }
     } 
 
@@ -162,21 +234,32 @@ public class PlayerMovement : MonoBehaviour
         public PlayerStateNum state = PlayerStateNum.Jumping;
         PlayerMovement player;
         bool airborne = false;
+        private float elapsedJumpTime = 0;
+        private float maxJumpTime;
         public JumpingState(PlayerMovement movement)
         {
             player = movement;
             player.jumpAvalailable = false;
+            maxJumpTime = player.maxJumpTime;
         }
         override public void CheckConditions()
         {
+            elapsedJumpTime += Time.deltaTime;
             bool grounded = player.IsOnSurface();
-            if (grounded && airborne) player.playerState = new StickingState(player);//new GroundedState(player);
-            else if (!grounded && player.takingOff) airborne = true;
-            else if (!grounded && !player.takingOff) player.playerState = new FallingState(player);
+            if (grounded && airborne) {
+                player.playerState = new StickingState(player);
+                return;
+            }
+            else if (!grounded && player.jumpButtonDown) airborne = true;
+            else if (!grounded && !player.jumpButtonDown) {
+                player.playerState = new FallingState(player);
+                return;
+            }
+            if (elapsedJumpTime >= maxJumpTime) player.playerState = new FallingState(player);
         }
         override public void UpdatePlayer()
         {
-            player.verticalVector = -player.gravity * player.gravityForce;
+            player.verticalVector = -player.gravity * player.gravityForce * player.jumpCurve.Evaluate(elapsedJumpTime/maxJumpTime); 
             player.horizontalVector = player.movementSpeed * Vector2.Dot(player.groundSurface, player.inputVector) * player.groundSurface;
         }
     } 
@@ -190,7 +273,6 @@ public class PlayerMovement : MonoBehaviour
         private int targetIndex;
         private int localFaceIndex;
         private Vector2 stickingPoint;
-        private float distanceToStickingPoint; //0 if current corner, 1 if next corner, between that otherwise
         private Vector2 lastMovementVector;
         public StickingState(PlayerMovement movement)
         {
@@ -201,7 +283,21 @@ public class PlayerMovement : MonoBehaviour
             lastMovementVector = (player.verticalVector + player.horizontalVector).normalized;
 
             ResolveStickingPrerequisites(player.currentSurface, player.contactPoint);
-            Debug.Log("Entered sticking state");
+            player.state = state;
+        }
+
+        public StickingState(PlayerMovement movement, Vector2 targetNorm, int targetIdx, int localFaceIdx, Vector2 stickPoint)
+        {
+            player = movement;
+            player.jumpAvalailable = false;
+            targetHitbox = player.currentSurface;
+
+            targetNormal = targetNorm;
+            targetIndex = targetIdx;
+            localFaceIndex = localFaceIdx;
+            stickingPoint = stickPoint;
+
+            lastMovementVector = (player.verticalVector + player.horizontalVector).normalized;
         }
         override public void CheckConditions()
         {
@@ -213,11 +309,12 @@ public class PlayerMovement : MonoBehaviour
             Vector2 midpoint = (a + b) / 2f;
             if (Vector2.Dot(currentNormal, midpoint - (Vector2)player.transform.position) < 0f) currentNormal = -currentNormal;
             if (Vector2.Dot(-currentNormal, targetNormal) > 0.99995f) {
-                player.playerState = new GroundedState(player);
-                player.gravity = -targetNormal;
+                GroundedState state = new GroundedState(player);
+                state.DefineLocalFaceIndex(localFaceIndex);
+                player.playerState = state;
             }
         }
-        override public void UpdatePlayer() //Resolve movement based landing on flat surface, resolve no center contact after correction
+        override public void UpdatePlayer() 
         {
             player.verticalVector = Vector2.zero;
             player.horizontalVector = Vector2.zero;
@@ -230,7 +327,7 @@ public class PlayerMovement : MonoBehaviour
             if (Vector2.Dot(currentNormal, midpoint - (Vector2)player.transform.position) < 0f) currentNormal = -currentNormal;
             Vector2 desiredNormal = -targetNormal;
             float angleDelta = Vector2.SignedAngle(currentNormal, desiredNormal);
-            float rotateSpeed = 360f;
+            float rotateSpeed = 720f;
             float step = rotateSpeed * Time.deltaTime;
             float rotationThisFrame = Mathf.Clamp(angleDelta, -step, step);
             Vector2 offset = (Vector2)player.transform.position - stickingPoint;
@@ -248,7 +345,7 @@ public class PlayerMovement : MonoBehaviour
             bool triangleCorner = ResolveTriangleContactType(contactPoint, out cornerIndex); //did triangle hit with corner or with face
             int triangleFaceIndex;
             if (!triangleCorner) { //If hit with face, identify index of face
-                localFaceIndex = ResolveTriangleContact(contactPoint, out distanceToStickingPoint);
+                localFaceIndex = ResolveTriangleContact(contactPoint);
             }
             else
             {
@@ -275,11 +372,9 @@ public class PlayerMovement : MonoBehaviour
                     float nextDot = Vector2.Dot(tnext, targetVector);
                     if (prevDot >= nextDot) {
                         localFaceIndex = (cornerIndex - 1 + trianglePoints.Length) % trianglePoints.Length;
-                        distanceToStickingPoint = 1f;
                     }
                     else {
                         localFaceIndex = cornerIndex;
-                        distanceToStickingPoint = 0f;
                     }
 
                 }
@@ -314,11 +409,9 @@ public class PlayerMovement : MonoBehaviour
 
                     if (prevDot >= nextDot) {
                         localFaceIndex = (cornerIndex - 1 + points.Length) % points.Length;
-                        distanceToStickingPoint = 1f;
                     }
                     else {
                         localFaceIndex = cornerIndex;
-                        distanceToStickingPoint = 0f;
                     }
                 }
             }
@@ -450,35 +543,31 @@ public class PlayerMovement : MonoBehaviour
             return false;
         }
 
-        private int ResolveTriangleContact(Vector2 contactPoint, out float distanceAlongEdge) 
+        private int ResolveTriangleContact(Vector2 contactPoint) 
         {
             int faceIndex = -1;
             Vector2[] points = player.collider.points;
             float bestDistance = float.MaxValue;
-            distanceAlongEdge = 0;
             for (int i = 0; i < points.Length; i++)
             {
                 Vector2 a = player.collider.transform.TransformPoint(points[i]); //retrieve edge
                 Vector2 b = player.collider.transform.TransformPoint(points[(i + 1) % points.Length]);
-                float localDistance;
-                Vector2 closest = ClosestPointOnSegment(contactPoint, a, b, out localDistance); //get closest point
+                Vector2 closest = ClosestPointOnSegment(contactPoint, a, b); //get closest point
                 float distance = Vector2.Distance(contactPoint, closest); //check how far contact point is from closest point (hardly any difference if on line)
                 if (distance < bestDistance) //take closest match, which should have a very small distance since it's the same point
                 {
                     bestDistance = distance;
                     faceIndex = i;
-                    distanceAlongEdge = localDistance;
                 }
             }
             return faceIndex;
         }
 
-        private Vector2 ClosestPointOnSegment(Vector2 contactPoint, Vector2 a, Vector2 b, out float distance)
+        private Vector2 ClosestPointOnSegment(Vector2 contactPoint, Vector2 a, Vector2 b)
         {
             Vector2 ab = b - a; 
             Vector2 ap = contactPoint - a;
             float distanceAlongAB = Mathf.Clamp01(Vector2.Dot(ap, ab) / ab.sqrMagnitude); //projection of ap onto side ab
-            distance = distanceAlongAB;
             return a + ab * distanceAlongAB;
         }
     } 
@@ -503,8 +592,6 @@ public class PlayerMovement : MonoBehaviour
     {
         playerState.CheckConditions();
         playerState.UpdatePlayer();
-        //horizontalVector = movementSpeed * Vector2.Dot(groundSurface, inputVector) * groundSurface;
-        //verticalVector *= gravityForce;
         rb.linearVelocity = verticalVector + horizontalVector;
     }
 
@@ -515,7 +602,7 @@ public class PlayerMovement : MonoBehaviour
         float closestSide = float.MaxValue;
         bool foundSurface = false;
 
-        for (int i =0; i < colliderPoints.Length; i++)
+        for (int i = 0; i < colliderPoints.Length; i++)
         {
             Vector2 vA = transform.TransformPoint(colliderPoints[i]);
             Vector2 vB = transform.TransformPoint(colliderPoints[(i + 1) % colliderPoints.Length]);
@@ -540,12 +627,42 @@ public class PlayerMovement : MonoBehaviour
                     closestSide = hit.distance;
                     contactPoint = hit.point;
                     groundSurface = new Vector2(hit.normal.y, -hit.normal.x).normalized;
-                    currentSurface = hit.collider as PolygonCollider2D;
+                    currentSurface = hit.collider as PolygonCollider2D; 
                 }
             }
         }
         return foundSurface;
     }
+
+    private bool IsStillOnSurface(int localFaceIndex)
+    {
+        Vector2[] points = collider.points;
+        Vector2 vA = transform.TransformPoint(points[localFaceIndex]);
+        Vector2 vB = transform.TransformPoint(points[(localFaceIndex + 1) % points.Length]);
+        Vector2 midPoint = (vA + vB) * 0.5f;
+        Vector2 edge = vB - vA;
+
+        float edgeLength = edge.magnitude;
+        Vector2 edgeDir = edge.normalized;
+        float angle = Mathf.Atan2(edgeDir.y, edgeDir.x) * Mathf.Rad2Deg;
+        Vector2 boxSize = new Vector2(edgeLength, edgeThickness);
+
+        RaycastHit2D hit = Physics2D.BoxCast(midPoint, boxSize, angle, gravity, edgeThickness, groundLayer);
+        if (!hit) return false;
+        if (hit.collider != currentSurface) return false;// Ensure same collider
+
+        // Ensure still aligned with gravity
+        float alignment = Vector2.Dot(hit.normal, -gravity);
+
+        // tolerance
+        if (alignment < 0.8f) return false;
+
+        // Update contact info if desired
+        //contactPoint = hit.point;
+
+        return true;
+    }
+
 
     private void OnDrawGizmos()
 {
@@ -684,35 +801,12 @@ public class PlayerMovement : MonoBehaviour
     {
         if (context.started && jumpAvalailable)
         {
-            takingOff = true;
-            //SetState(PlayerStateNum.Jumping);
-            //jumpTimer = StartCoroutine(JumpTimer());
+            jumpButtonDown = true;
         }
         if (context.canceled)
         {
-            takingOff = false;
-            //playerState = new FallingState(this);
-            //SetState(PlayerStateNum.Falling);
+            jumpButtonDown = false;
         }
-    }
-
-    private IEnumerator JumpTimer()
-    {
-        jumping = true;
-        jumpTimeElapsed = 0f;
-        while (jumpTimeElapsed < maxJumpTime/2)
-        {
-            jumpTimeElapsed += Time.deltaTime;
-            yield return null;
-        }
-        if (!jumpButtonDown) jumping = false;
-        while (jumpTimeElapsed < maxJumpTime && jumping)
-        {
-            jumpTimeElapsed += Time.deltaTime;
-            yield return null;
-        }
-        jumping = false;
-        jumpTimeElapsed = 0f;
     }
 
     public void Move(InputAction.CallbackContext context)
@@ -731,10 +825,7 @@ public class PlayerMovement : MonoBehaviour
 
 //TODO 
 /*
-Switch to class based player states
-Rotating when running off edges
 Not allowing sticking when too upside down
-Limiting the jump time
 Get the camera following the player
 Configure the movement parameters
 Configure the camera parameters
