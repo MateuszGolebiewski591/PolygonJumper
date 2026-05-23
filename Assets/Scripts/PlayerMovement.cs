@@ -92,6 +92,8 @@ public class PlayerMovement : MonoBehaviour
         private int targetIndex = 0;
         private Vector2 stickingPoint = Vector2.zero;
         private bool postCorrectionState = false;
+        private float postCorrectionLimit = 5f;
+        private float timeSincePostCorrectionStart = 0f;
         public GroundedState(PlayerMovement movement)
         {
             player = movement;
@@ -133,7 +135,11 @@ public class PlayerMovement : MonoBehaviour
             }
             player.IsOnSurface();
             bool supported = HasSupport();
-            if (supported && postCorrectionState) postCorrectionState = false;
+            if (postCorrectionState) timeSincePostCorrectionStart += Time.deltaTime;
+            if (supported && postCorrectionState || timeSincePostCorrectionStart >= postCorrectionLimit) {
+                postCorrectionState = false;
+                timeSincePostCorrectionStart = 0;
+            }
             if (!supported && !postCorrectionState)
             {
                 Vector2[] surfacePoints = player.currentSurface.points;
@@ -160,11 +166,33 @@ public class PlayerMovement : MonoBehaviour
                 {
                     targetNormal = nextNormal;
                     targetIndex = nextFace;
+                    Vector2[] points = player.collider.points;
+                    Vector2 a = player.collider.transform.TransformPoint(points[localFaceIndex]);
+                    Vector2 b = player.collider.transform.TransformPoint(points[(localFaceIndex + 1) % points.Length]);
+                    Vector2 edge = b - a;
+                    Vector2 currentNormal = new Vector2(-edge.y, edge.x).normalized;
+                    Vector2 midpoint = (a + b) / 2f;
+                    if (Vector2.Dot(currentNormal, midpoint - (Vector2)player.transform.position) < 0f) currentNormal = -currentNormal;
+                    if (Vector2.Dot(-currentNormal, targetNormal) > 0.99995f) {
+                        targetNormal = prevNormal;
+                        targetIndex = prevFace;
+                    }
                 }
                 else
                 {
                     targetNormal = prevNormal;
                     targetIndex = prevFace;
+                    Vector2[] points = player.collider.points;
+                    Vector2 a = player.collider.transform.TransformPoint(points[localFaceIndex]);
+                    Vector2 b = player.collider.transform.TransformPoint(points[(localFaceIndex + 1) % points.Length]);
+                    Vector2 edge = b - a;
+                    Vector2 currentNormal = new Vector2(-edge.y, edge.x).normalized;
+                    Vector2 midpoint = (a + b) / 2f;
+                    if (Vector2.Dot(currentNormal, midpoint - (Vector2)player.transform.position) < 0f) currentNormal = -currentNormal;
+                    if (Vector2.Dot(-currentNormal, targetNormal) > 0.99995f) {
+                        targetNormal = nextNormal;
+                        targetIndex = nextFace;
+                    }
                 }
                 stickingPoint = player.currentSurface.transform.TransformPoint(surfacePoints[closestCorner]);
                 correctionState = true;
@@ -286,19 +314,6 @@ public class PlayerMovement : MonoBehaviour
             player.state = state;
         }
 
-        public StickingState(PlayerMovement movement, Vector2 targetNorm, int targetIdx, int localFaceIdx, Vector2 stickPoint)
-        {
-            player = movement;
-            player.jumpAvalailable = false;
-            targetHitbox = player.currentSurface;
-
-            targetNormal = targetNorm;
-            targetIndex = targetIdx;
-            localFaceIndex = localFaceIdx;
-            stickingPoint = stickPoint;
-
-            lastMovementVector = (player.verticalVector + player.horizontalVector).normalized;
-        }
         override public void CheckConditions()
         {
             Vector2[] points = player.collider.points;
@@ -346,11 +361,19 @@ public class PlayerMovement : MonoBehaviour
             int triangleFaceIndex;
             if (!triangleCorner) { //If hit with face, identify index of face
                 localFaceIndex = ResolveTriangleContact(contactPoint);
+                int looseCornerIndex = -1;
+                
+                if (TryGetNearbyCorner(surfaceHitbox, contactPoint, out looseCornerIndex)) {
+                    //Debug.Log("triangle face x object corner");
+                    StabilizeTargetFace(looseCornerIndex);
+                }
+                //else Debug.Log("face x face");
             }
             else
             {
                 if (surfaceCorner) //corner - corner
                 {
+                    //Debug.Log("corner x corner");
                     //on object hitbox, get the corner and work out vector to adjacent adjacent, going out from the corner we hit to get target edge
                     Vector2[] surfacePoints = surfaceHitbox.points; 
                     int nextCornerIndex;
@@ -376,10 +399,15 @@ public class PlayerMovement : MonoBehaviour
                     else {
                         localFaceIndex = cornerIndex;
                     }
+                    int looseCornerIndex = -1;
+                    if (TryGetNearbyCorner(surfaceHitbox, contactPoint, out looseCornerIndex)) {
+                        StabilizeTargetFace(looseCornerIndex);
+                    }
 
                 }
                 else // triangle corner - object face
                 {
+                    //Debug.Log("triangel corner x object face");
                     // get adjacent corners, compute outward vectors, dot product, take best magnitude 
                     Vector2[] points = player.collider.points; //retrieve outward vectors from triangle corner
                     Vector2 prevPoint = player.collider.transform.TransformPoint(points[(cornerIndex - 1 + points.Length) % points.Length]);
@@ -413,6 +441,8 @@ public class PlayerMovement : MonoBehaviour
                     else {
                         localFaceIndex = cornerIndex;
                     }
+                   
+                    
                 }
             }
             return;
@@ -570,6 +600,77 @@ public class PlayerMovement : MonoBehaviour
             float distanceAlongAB = Mathf.Clamp01(Vector2.Dot(ap, ab) / ab.sqrMagnitude); //projection of ap onto side ab
             return a + ab * distanceAlongAB;
         }
+
+        private bool TryGetNearbyCorner(PolygonCollider2D hitbox, Vector2 contactPoint, out int cornerIndex)
+        {
+            cornerIndex = -1;
+            Vector2[] points = hitbox.points;
+            float closestDistance = float.MaxValue;
+            int closestIndex = -1;
+            for (int i = 0; i < points.Length; i++)
+            {
+                Vector2 worldPoint = hitbox.transform.TransformPoint(points[i]);
+                float distance = Vector2.Distance(contactPoint, worldPoint);
+                if (distance < closestDistance)
+                {
+                    closestDistance = distance;
+                    closestIndex = i;
+                }
+            }
+            float cornerTolerance = 0.1f;
+            if (closestDistance <= cornerTolerance)
+            {
+                cornerIndex = closestIndex;
+                return true;
+            }
+            return false;
+        }
+
+        private void StabilizeTargetFace(int closestCornerIndex)
+        {
+            Vector2[] triPoints = player.collider.points;
+            Vector2 faceA = player.collider.transform.TransformPoint(triPoints[localFaceIndex]);
+            Vector2 faceB = player.collider.transform.TransformPoint(triPoints[(localFaceIndex + 1) % triPoints.Length]);
+            Vector2 faceMidpoint = (faceA + faceB) * 0.5f;
+            
+            Vector2[] surfacePoints = targetHitbox.points;
+            Vector2 prevPoint = targetHitbox.transform.TransformPoint(surfacePoints[(closestCornerIndex - 1 + surfacePoints.Length) % surfacePoints.Length]);
+            Vector2 cornerPoint = targetHitbox.transform.TransformPoint(surfacePoints[closestCornerIndex]);
+            Vector2 nextPoint = targetHitbox.transform.TransformPoint(surfacePoints[(closestCornerIndex + 1) % surfacePoints.Length]);
+            Vector2 prevEdge = (prevPoint - cornerPoint).normalized;
+            Vector2 nextEdge = (nextPoint - cornerPoint).normalized;
+
+            Vector2 midpointVector = (faceMidpoint - cornerPoint).normalized;
+            float currentDot, challengeDot;
+            Vector2 challengeEdge;
+            int challengeIndex;
+            if (closestCornerIndex == targetIndex)
+            {
+                challengeDot = Vector2.Dot(midpointVector, prevEdge);
+                currentDot = Vector2.Dot(midpointVector, nextEdge);
+                challengeIndex = (closestCornerIndex - 1 + surfacePoints.Length) % surfacePoints.Length;
+                challengeEdge = prevEdge;
+            }
+            else
+            {
+                challengeDot = Vector2.Dot(midpointVector, nextEdge);
+                currentDot = Vector2.Dot(midpointVector, prevEdge);
+                challengeEdge = nextEdge;
+                challengeIndex = closestCornerIndex;
+            }
+            
+            if (challengeDot > currentDot)
+            {
+                targetIndex = challengeIndex;
+                Vector2 normal = new Vector2(-challengeEdge.y, challengeEdge.x).normalized; //compute normal
+                Vector2 a = targetHitbox.transform.TransformPoint(surfacePoints[challengeIndex]);
+                Vector2 b = targetHitbox.transform.TransformPoint(surfacePoints[(challengeIndex + 1) % surfacePoints.Length]);
+                Vector2 midpoint = (a + b) / 2f; // midpoint of vector
+                Vector2 toMid = midpoint - (Vector2)targetHitbox.bounds.center; //Vector from object center to the midpoint (should be parallel to normal)
+                if (Vector2.Dot(normal, toMid) < 0f)normal = -normal; //ensures outward facing normal
+                targetNormal = normal;
+            }
+        }   
     } 
 
 
