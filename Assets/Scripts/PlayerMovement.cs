@@ -631,7 +631,10 @@ public class PlayerMovement : MonoBehaviour
             Vector2[] triPoints = player.collider.points;
             Vector2 faceA = player.collider.transform.TransformPoint(triPoints[localFaceIndex]);
             Vector2 faceB = player.collider.transform.TransformPoint(triPoints[(localFaceIndex + 1) % triPoints.Length]);
+            Vector2 edge = faceB - faceA;
+            Vector2 currentNormal = new Vector2(-edge.y, edge.x).normalized;
             Vector2 faceMidpoint = (faceA + faceB) * 0.5f;
+            if (Vector2.Dot(currentNormal, faceMidpoint - (Vector2)player.transform.position) < 0f) currentNormal = -currentNormal;
             
             Vector2[] surfacePoints = targetHitbox.points;
             Vector2 prevPoint = targetHitbox.transform.TransformPoint(surfacePoints[(closestCornerIndex - 1 + surfacePoints.Length) % surfacePoints.Length]);
@@ -641,6 +644,40 @@ public class PlayerMovement : MonoBehaviour
             Vector2 nextEdge = (nextPoint - cornerPoint).normalized;
 
             Vector2 midpointVector = (faceMidpoint - cornerPoint).normalized;
+            float prevDot = Vector2.Dot(midpointVector, prevEdge);
+            float nextDot = Vector2.Dot(midpointVector, nextEdge);
+            Debug.Log(Mathf.Abs(nextDot - prevDot));
+            if (Mathf.Abs(nextDot - prevDot) < 0.4825f)
+            {
+                Debug.Log("Predictive correction");
+                Vector2 prevNormal = new Vector2(-prevEdge.y, prevEdge.x).normalized;
+                Vector2 nextNormal = new Vector2(-nextEdge.y, nextEdge.x).normalized;
+                Vector2 prevMidpoint = (prevPoint + cornerPoint)/2f;
+                Vector2 nextMidpoint = (nextPoint + cornerPoint)/2f;
+                if (Vector2.Dot(prevNormal, prevMidpoint - (Vector2)player.currentSurface.bounds.center) < 0f) prevNormal = -prevNormal;
+                if (Vector2.Dot(nextNormal, nextMidpoint - (Vector2)player.currentSurface.bounds.center) < 0f) nextNormal = -nextNormal;
+                bool prevPrediction = PredictPosition(cornerPoint, faceMidpoint, currentNormal, prevNormal);
+                bool nextPrediction = PredictPosition(cornerPoint, faceMidpoint, currentNormal, nextNormal);
+                if (prevPrediction && nextPrediction) return;
+                if (prevPrediction && !nextPrediction)
+                {
+                    if (closestCornerIndex == targetIndex)
+                    {
+                        targetIndex = (closestCornerIndex - 1 + surfacePoints.Length) % surfacePoints.Length;
+                        targetNormal = prevNormal;
+                    }
+                    return;
+                }
+                if (nextPrediction && !prevPrediction)
+                {
+                    if (closestCornerIndex != targetIndex)
+                    {
+                        targetIndex = closestCornerIndex;
+                        targetNormal = nextNormal;
+                    }
+                    return;
+                }
+            }  
             float currentDot, challengeDot;
             Vector2 challengeEdge;
             int challengeIndex;
@@ -670,7 +707,26 @@ public class PlayerMovement : MonoBehaviour
                 if (Vector2.Dot(normal, toMid) < 0f)normal = -normal; //ensures outward facing normal
                 targetNormal = normal;
             }
-        }   
+        } 
+
+        private bool PredictPosition(Vector2 cornerPoint, Vector2 midpoint,  Vector2 currentNormal, Vector2 candidateTargetNormal)
+        {
+            float angle = Vector2.SignedAngle(currentNormal, -candidateTargetNormal);
+            Vector2 predictedMidpoint = RotatePointAroundPivot(midpoint, cornerPoint, angle);
+            RaycastHit2D hit = Physics2D.Raycast(predictedMidpoint, -candidateTargetNormal, 1f, player.groundLayer);
+            if (!hit) return false;
+            return hit.collider == player.currentSurface;
+        }
+
+        Vector2 RotatePointAroundPivot(Vector2 point, Vector2 pivot, float angleDegrees)
+        {
+            float radians = angleDegrees * Mathf.Deg2Rad;
+            float sin = Mathf.Sin(radians);
+            float cos = Mathf.Cos(radians);
+            Vector2 offset = point - pivot;
+            Vector2 rotated = new Vector2(offset.x * cos - offset.y * sin, offset.x * sin + offset.y * cos);
+            return pivot + rotated;
+        }  
     } 
 
 
