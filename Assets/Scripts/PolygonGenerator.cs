@@ -2,52 +2,64 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
  
- [ExecuteAlways]
+[ExecuteAlways]
 public class PolygonGenerator : MonoBehaviour
 {
     #region setup
     //mesh properties
     Mesh mesh;
-    public Vector3[] polygonPoints;
-    public int[] polygonTriangles;
+    [SerializeField] private Vector2[] polygonPoints;
+    [SerializeField] private int[] polygonTriangles;
+    private PolygonCollider2D polyCollider;
  
     
-    public int polygonSides;
-    public float polygonRadius;
-    
-    void Start()
+    [SerializeField] private int polygonSides;
+    [SerializeField] private float polygonRadius;
+    [SerializeField] private float rotation;
+
+    void Awake()
     {
+        polyCollider = GetComponentInChildren<PolygonCollider2D>();
         mesh = new Mesh();
         this.GetComponent<MeshFilter>().mesh = mesh;
         DrawFilled(polygonSides,polygonRadius);
     }
+    
     #endregion
  
-    void DrawFilled(int sides, float radius)
+    private void DrawFilled(int sides, float radius)
     {
         polygonPoints = GetCircumferencePoints(sides,radius).ToArray();
         polygonTriangles = DrawFilledTriangles(polygonPoints);
         mesh.Clear();
-        mesh.vertices = polygonPoints;
+        List<Vector3> meshPoints = new List<Vector3>();
+        foreach (Vector2 point in polygonPoints)
+        {
+            meshPoints.Add(new Vector3(point.x, point.y, 0));
+        }
+        mesh.vertices = meshPoints.ToArray();
         mesh.triangles = polygonTriangles;
+        polyCollider.pathCount = 1;
+        polyCollider.SetPath(0, polygonPoints);
     }
     
-    List<Vector3> GetCircumferencePoints(int sides, float radius)   
+    private List<Vector2> GetCircumferencePoints(int sides, float radius)   
     {
-        List<Vector3> points = new List<Vector3>();
+        List<Vector2> points = new List<Vector2>();
         float circumferenceProgressPerStep = (float)1/sides;
         float TAU = 2*Mathf.PI;
         float radianProgressPerStep = circumferenceProgressPerStep*TAU;
+        float rotationalOffset = TAU * rotation/360f;
         
         for(int i = 0; i<sides; i++)
         {
-            float currentRadian = radianProgressPerStep*i;
-            points.Add(new Vector3(Mathf.Sin(currentRadian)*radius, Mathf.Cos(currentRadian)*radius,0));
+            float currentRadian = radianProgressPerStep*i + rotationalOffset;
+            points.Add(new Vector2(Mathf.Sin(currentRadian)*radius, Mathf.Cos(currentRadian)*radius));
         }
         return points;
     }
     
-    int[] DrawFilledTriangles(Vector3[] points)
+    private int[] DrawFilledTriangles(Vector2[] points)
     {   
         int triangleAmount = points.Length - 2;
         List<int> newTriangles = new List<int>();
