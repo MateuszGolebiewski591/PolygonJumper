@@ -14,6 +14,7 @@ public class PlayerMovement : MonoBehaviour
     [Header("Movement Parameters")]
     private Vector2 horizontalVector = Vector2.zero;
     private Vector2 verticalVector = Vector2.zero;
+    private Vector2 additionalVector = Vector2.zero;
     private Vector2 groundSurface =  Vector2.zero;
     private Vector2 inputVector = Vector2.zero;
     [SerializeField] float groundMovementSpeed = 7.5f;
@@ -26,7 +27,9 @@ public class PlayerMovement : MonoBehaviour
     private Vector2 contactPoint;
 
 
-    [SerializeField] float gravityForce = 9.81f; 
+    [SerializeField] private float gravityForce = 9.81f; 
+    [SerializeField] private float terminalVelocity = 15f;
+    [SerializeField] private float jumpForce = 15f;
 
     [Header("Jump Parameters")]
     private bool jumpAvalailable = true;
@@ -61,25 +64,95 @@ public class PlayerMovement : MonoBehaviour
     {
         public PlayerStateNum state = PlayerStateNum.Falling;
         PlayerMovement player;
-        private float minimumFallTimer = 0.2f;
         private float elapsedFallTime = 0;
-        public FallingState(PlayerMovement movement)
+        private float maxFallTime;
+        private float maxJump = 0;
+        private float elapsedJump = 0;
+        
+        public FallingState(PlayerMovement movement, float elapsedFall)
         {
             player = movement;
             player.jumpAvalailable = false;
             player.state = state;
+            maxFallTime = player.maxJumpTime;
+            player.verticalVector = Vector2.Dot(Vector2.down, player.additionalVector) * Vector2.down;
+            elapsedFallTime = elapsedFall;
         }
+
         override public void CheckConditions()
         {
-            elapsedFallTime += Time.deltaTime;
-            if (player.IsOnSurface() && elapsedFallTime >= minimumFallTimer) player.playerState = new StickingState(player);
+            if (player.IsOnSurface()) player.playerState = new StickingState(player);
         }
         override public void UpdatePlayer()
         {
-            player.verticalVector = Vector2.down * player.gravityForce;
-            player.horizontalVector = player.inputVector * player.movementSpeed;
+            elapsedFallTime += Time.deltaTime;
+            float fallStrength = player.jumpCurve.Evaluate(Mathf.Clamp01(1 - elapsedFallTime/maxFallTime));
+            //float dropOffStrength = player.jumpCurve.Evaluate(Mathf.Clamp01(elapsedFallTime/maxFallTime));
+            player.verticalVector += fallStrength * player.gravityForce * Vector2.down;
+            if (player.verticalVector.magnitude > player.terminalVelocity)
+            {
+                Vector2.Normalize(player.verticalVector);
+                player.verticalVector *= player.terminalVelocity;
+            }
+            player.horizontalVector = player.movementSpeed * Vector2.Dot(player.inputVector, Vector2.left) * Vector2.left;
+        }
+
+        public void PreserveVectors(float elapsedJumpTime, float maxJumpTime)
+        {
+            maxJump = maxJumpTime;
+            elapsedJump = elapsedJumpTime;
         }
     }
+
+    private class JumpingState : PlayerState
+    {
+        public PlayerStateNum state = PlayerStateNum.Jumping;
+        PlayerMovement player;
+        bool airborne = false;
+        private float elapsedJumpTime = 0;
+        private float maxJumpTime;
+        public JumpingState(PlayerMovement movement)
+        {
+            player = movement;
+            player.jumpAvalailable = false;
+            maxJumpTime = player.maxJumpTime;
+        }
+        override public void CheckConditions()
+        {
+            elapsedJumpTime += Time.deltaTime;
+            bool grounded = player.IsOnSurface();
+            if (grounded && airborne) {
+                player.playerState = new StickingState(player);
+                return;
+            }
+            else if (!grounded && player.jumpButtonDown) airborne = true;
+            else if (!grounded && !player.jumpButtonDown) {
+                FallingState fallingState = new FallingState(player, elapsedJumpTime);
+                fallingState.PreserveVectors(elapsedJumpTime, maxJumpTime);
+                player.playerState = fallingState;
+                return;
+            }
+            if (elapsedJumpTime >= maxJumpTime) player.playerState = new FallingState(player, elapsedJumpTime);
+        }
+        override public void UpdatePlayer()
+        {
+            player.additionalVector = -player.gravity * player.jumpForce * player.jumpCurve.Evaluate(elapsedJumpTime/maxJumpTime/2);
+            if (player.additionalVector.y <= 0)
+            {
+                player.additionalVector.y = 0;
+                float fallStrength = player.jumpCurve.Evaluate(Mathf.Clamp01(1 - elapsedJumpTime/player.maxJumpTime));
+                player.verticalVector += player.gravityForce * Vector2.down * fallStrength;
+                if (player.verticalVector.magnitude > player.terminalVelocity)
+                {
+                    Vector2.Normalize(player.verticalVector);
+                    player.verticalVector *= player.terminalVelocity;
+                }
+            }
+            else player.verticalVector = Vector2.zero;
+            player.horizontalVector = player.movementSpeed * Vector2.Dot(player.inputVector, Vector2.left) * Vector2.left;
+            if (player.horizontalVector.magnitude > 0 && (player.additionalVector.x > 0.5 || player.additionalVector.x < -0.5)) player.horizontalVector *= 0.5f;
+        }
+    } 
 
     private class GroundedState : PlayerState
     {
@@ -194,6 +267,7 @@ public class PlayerMovement : MonoBehaviour
         }
         override public void UpdatePlayer()
         {
+            player.additionalVector = Vector2.zero;
             if (correctionState)
             {
                 player.verticalVector = Vector2.zero;
@@ -244,40 +318,7 @@ public class PlayerMovement : MonoBehaviour
         }
     } 
 
-    private class JumpingState : PlayerState
-    {
-        public PlayerStateNum state = PlayerStateNum.Jumping;
-        PlayerMovement player;
-        bool airborne = false;
-        private float elapsedJumpTime = 0;
-        private float maxJumpTime;
-        public JumpingState(PlayerMovement movement)
-        {
-            player = movement;
-            player.jumpAvalailable = false;
-            maxJumpTime = player.maxJumpTime;
-        }
-        override public void CheckConditions()
-        {
-            elapsedJumpTime += Time.deltaTime;
-            bool grounded = player.IsOnSurface();
-            if (grounded && airborne) {
-                player.playerState = new StickingState(player);
-                return;
-            }
-            else if (!grounded && player.jumpButtonDown) airborne = true;
-            else if (!grounded && !player.jumpButtonDown) {
-                player.playerState = new FallingState(player);
-                return;
-            }
-            if (elapsedJumpTime >= maxJumpTime) player.playerState = new FallingState(player);
-        }
-        override public void UpdatePlayer()
-        {
-            player.verticalVector = -player.gravity * player.gravityForce * player.jumpCurve.Evaluate(elapsedJumpTime/maxJumpTime); 
-            player.horizontalVector = player.movementSpeed * Vector2.Dot(player.groundSurface, player.inputVector) * player.groundSurface;
-        }
-    } 
+    
 
     private class StickingState : PlayerState
     {
@@ -318,6 +359,7 @@ public class PlayerMovement : MonoBehaviour
         }
         override public void UpdatePlayer() 
         {
+            player.additionalVector = Vector2.zero;
             player.verticalVector = Vector2.zero;
             player.horizontalVector = Vector2.zero;
             Vector2[] points = player.collider.points;
@@ -601,10 +643,8 @@ public class PlayerMovement : MonoBehaviour
             Vector2 midpointVector = (faceMidpoint - cornerPoint).normalized;
             float prevDot = Vector2.Dot(midpointVector, prevEdge);
             float nextDot = Vector2.Dot(midpointVector, nextEdge);
-            Debug.Log(Mathf.Abs(nextDot - prevDot));
             if (Mathf.Abs(nextDot - prevDot) < 0.4825f)
             {
-                Debug.Log("Predictive correction");
                 Vector2 prevNormal = new Vector2(-prevEdge.y, prevEdge.x).normalized;
                 Vector2 nextNormal = new Vector2(-nextEdge.y, nextEdge.x).normalized;
                 Vector2 prevMidpoint = (prevPoint + cornerPoint)/2f;
@@ -690,7 +730,7 @@ public class PlayerMovement : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
         collider = GetComponent<PolygonCollider2D>();
         movementSpeed = groundMovementSpeed;
-        playerState = new FallingState(this);
+        playerState = new FallingState(this, 0);
     }
 
 
@@ -704,7 +744,7 @@ public class PlayerMovement : MonoBehaviour
     {
         playerState.CheckConditions();
         playerState.UpdatePlayer();
-        rb.linearVelocity = verticalVector + horizontalVector;
+        rb.linearVelocity = verticalVector + horizontalVector + additionalVector;
     }
 
 
@@ -893,7 +933,6 @@ public class PlayerMovement : MonoBehaviour
 
 //TODO 
 /*
-Expand polygon generator to also create hitboxes
 Get the camera following the player
 Configure the movement parameters
 Configure the camera parameters
