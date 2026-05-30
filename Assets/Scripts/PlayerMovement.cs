@@ -68,6 +68,8 @@ public class PlayerMovement : MonoBehaviour
         private float maxFallTime;
         private float maxJump = 0;
         private float elapsedJump = 0;
+        private Vector2 initialAdditionalVector;
+        private Vector2 currentAdditionalVector;
         
         public FallingState(PlayerMovement movement, float elapsedFall)
         {
@@ -77,6 +79,8 @@ public class PlayerMovement : MonoBehaviour
             maxFallTime = player.maxJumpTime;
             player.verticalVector = Vector2.Dot(Vector2.down, player.additionalVector) * Vector2.down;
             elapsedFallTime = elapsedFall;
+            initialAdditionalVector = player.additionalVector;
+            currentAdditionalVector = player.additionalVector;
         }
 
         override public void CheckConditions()
@@ -87,7 +91,6 @@ public class PlayerMovement : MonoBehaviour
         {
             elapsedFallTime += Time.deltaTime;
             float fallStrength = player.jumpCurve.Evaluate(Mathf.Clamp01(1 - elapsedFallTime/maxFallTime));
-            //float dropOffStrength = player.jumpCurve.Evaluate(Mathf.Clamp01(elapsedFallTime/maxFallTime));
             player.verticalVector += fallStrength * player.gravityForce * Vector2.down;
             if (player.verticalVector.magnitude > player.terminalVelocity)
             {
@@ -95,6 +98,9 @@ public class PlayerMovement : MonoBehaviour
                 player.verticalVector *= player.terminalVelocity;
             }
             player.horizontalVector = player.movementSpeed * Vector2.Dot(player.inputVector, Vector2.left) * Vector2.left;
+            if (player.horizontalVector.magnitude == 0) currentAdditionalVector *= 0.95f;
+            else currentAdditionalVector = initialAdditionalVector;
+            player.additionalVector = currentAdditionalVector;
         }
 
         public void PreserveVectors(float elapsedJumpTime, float maxJumpTime)
