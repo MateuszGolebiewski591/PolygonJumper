@@ -11,36 +11,41 @@ public class PlayerMovement : MonoBehaviour
     [Header("Layers")]
     [SerializeField] private LayerMask groundLayer;
 
+
     [Header("Movement Parameters")]
+    [SerializeField] private float groundMovementSpeed = 7.5f;
+    [SerializeField] private float gravityForce = 9.81f; 
+    [SerializeField] private float terminalVelocity = 15f;
     private Vector2 horizontalVector = Vector2.zero;
     private Vector2 verticalVector = Vector2.zero;
     private Vector2 additionalVector = Vector2.zero;
     private Vector2 groundSurface =  Vector2.zero;
     private Vector2 inputVector = Vector2.zero;
-    [SerializeField] float groundMovementSpeed = 7.5f;
-    private float movementSpeed = 0f;
+    private float movementSpeed = 0f;    
+    private Vector2 gravity = Vector2.down;
+    
+    
+    [Header("Jump Parameters")]
+    [SerializeField] private float jumpForce = 15f;
+    [SerializeField] private float maxJumpTime = 2f;
+    [SerializeField] private AnimationCurve jumpCurve;
+    private bool jumpAvalailable = false;
+    private bool jumpButtonDown = false;
+
+
+    [Header("Dash Parameters")]
+    [SerializeField] private float airDashTime = 0.2f;
+    [SerializeField] private AnimationCurve airDashCurve;
+    private bool airDashAvailable = false;
+    private bool airDashButtonDown = false;
+
 
     [Header("edge detection")]
-    private Vector2 gravity = Vector2.down;
-    [SerializeField] float edgeThickness = 0.1f;
+    [SerializeField] private float edgeThickness = 0.1f;
+    [SerializeField] private float groundCheckDistance = 0.1f;
     private PolygonCollider2D currentSurface; 
     private Vector2 contactPoint;
 
-
-    [SerializeField] private float gravityForce = 9.81f; 
-    [SerializeField] private float terminalVelocity = 15f;
-    [SerializeField] private float jumpForce = 15f;
-
-    [Header("Jump Parameters")]
-    private bool jumpAvalailable = true;
-    private float jumpTimeElapsed = 0f;
-    private bool jumpButtonDown = false;
-    [SerializeField] float maxJumpTime = 2f;
-    [SerializeField] float coyoteTime = 0.2f;
-
-    [Header("Other")]
-    [SerializeField] private AnimationCurve jumpCurve;
-    [SerializeField] private float groundCheckDistance = 0.1f;
     private PlayerStateNum state = PlayerStateNum.Falling;
     private PlayerState playerState;
 
@@ -50,6 +55,7 @@ public class PlayerMovement : MonoBehaviour
         Jumping,
         Falling,
         Sticking,
+        AirDash,
     }
 
     abstract private class PlayerState
@@ -66,8 +72,6 @@ public class PlayerMovement : MonoBehaviour
         PlayerMovement player;
         private float elapsedFallTime = 0;
         private float maxFallTime;
-        private float maxJump = 0;
-        private float elapsedJump = 0;
         private Vector2 initialAdditionalVector;
         private Vector2 currentAdditionalVector;
         
@@ -86,6 +90,7 @@ public class PlayerMovement : MonoBehaviour
         override public void CheckConditions()
         {
             if (player.IsOnSurface()) player.playerState = new StickingState(player);
+            if (player.airDashAvailable && player.airDashButtonDown && player.inputVector.x != 0) player.playerState = new AirDashState(player);
         }
         override public void UpdatePlayer()
         {
@@ -98,15 +103,10 @@ public class PlayerMovement : MonoBehaviour
                 player.verticalVector *= player.terminalVelocity;
             }
             player.horizontalVector = player.movementSpeed * Vector2.Dot(player.inputVector, Vector2.left) * Vector2.left;
+            if (Vector2.Dot(player.horizontalVector, currentAdditionalVector) < 0) initialAdditionalVector = Vector2.zero;
             if (player.horizontalVector.magnitude == 0) currentAdditionalVector *= 0.95f;
             else currentAdditionalVector = initialAdditionalVector;
             player.additionalVector = currentAdditionalVector;
-        }
-
-        public void PreserveVectors(float elapsedJumpTime, float maxJumpTime)
-        {
-            maxJump = maxJumpTime;
-            elapsedJump = elapsedJumpTime;
         }
     }
 
@@ -122,6 +122,8 @@ public class PlayerMovement : MonoBehaviour
             player = movement;
             player.jumpAvalailable = false;
             maxJumpTime = player.maxJumpTime;
+            player.airDashAvailable = false;
+            player.state = state; 
         }
         override public void CheckConditions()
         {
@@ -131,11 +133,17 @@ public class PlayerMovement : MonoBehaviour
                 player.playerState = new StickingState(player);
                 return;
             }
-            else if (!grounded && player.jumpButtonDown) airborne = true;
+            else if (!grounded && player.jumpButtonDown && !player.airDashAvailable) {
+                airborne = true;
+                player.airDashAvailable = true;
+            }
+            else if (player.airDashAvailable && player.airDashButtonDown && player.inputVector.x != 0)
+            {
+                player.playerState = new AirDashState(player);
+                return;
+            }
             else if (!grounded && !player.jumpButtonDown) {
-                FallingState fallingState = new FallingState(player, elapsedJumpTime);
-                fallingState.PreserveVectors(elapsedJumpTime, maxJumpTime);
-                player.playerState = fallingState;
+                player.playerState = new FallingState(player, elapsedJumpTime);
                 return;
             }
             if (elapsedJumpTime >= maxJumpTime) player.playerState = new FallingState(player, elapsedJumpTime);
@@ -143,7 +151,7 @@ public class PlayerMovement : MonoBehaviour
         override public void UpdatePlayer()
         {
             player.additionalVector = -player.gravity * player.jumpForce * player.jumpCurve.Evaluate(elapsedJumpTime/maxJumpTime/2);
-            if (player.additionalVector.y <= 0)
+            if (player.additionalVector.y <= 0.05)
             {
                 player.additionalVector.y = 0;
                 float fallStrength = player.jumpCurve.Evaluate(Mathf.Clamp01(1 - elapsedJumpTime/player.maxJumpTime));
@@ -159,6 +167,41 @@ public class PlayerMovement : MonoBehaviour
             if (player.horizontalVector.magnitude > 0 && (player.additionalVector.x > 0.5 || player.additionalVector.x < -0.5)) player.horizontalVector *= 0.5f;
         }
     } 
+
+    private class AirDashState : PlayerState
+    {
+        public PlayerStateNum state = PlayerStateNum.AirDash;
+        PlayerMovement player;
+        private float airDashTime;
+        private float elapsedAirDashTime = 0;
+        private Vector2 airDashDirection;
+
+        public AirDashState(PlayerMovement movement)
+        {
+            player = movement;
+            player.airDashAvailable = false;
+            player.state = state;
+            airDashTime = player.airDashTime;
+            airDashDirection = player.inputVector;
+            player.verticalVector = Vector2.zero;
+            player.additionalVector = Vector2.zero;
+        }
+
+        override public void CheckConditions()
+        {
+            bool grounded = player.IsOnSurface();
+            elapsedAirDashTime += Time.deltaTime;
+            if (grounded) player.playerState = new StickingState(player);
+            if (elapsedAirDashTime >= airDashTime) player.playerState = new FallingState(player, 0);
+        }
+
+        override public void UpdatePlayer()
+        {
+            if (Vector2.Dot(player.inputVector, airDashDirection) < 0 && elapsedAirDashTime < 0.8f * airDashTime) elapsedAirDashTime = 0.8f * airDashTime;
+            float dashSpeed = player.airDashCurve.Evaluate(elapsedAirDashTime/airDashTime);
+            player.horizontalVector = airDashDirection * dashSpeed * 3f * player.movementSpeed; 
+        }
+    }
 
     private class GroundedState : PlayerState
     {
@@ -184,7 +227,9 @@ public class PlayerMovement : MonoBehaviour
                 player.jumpAvalailable = true;
                 waitingOnJumpUp = false;
             }
+            player.airDashAvailable = true;
             player.IsOnSurface();
+            player.state = state;
         }
 
         public void DefineLocalFaceIndex(int face) {localFaceIndex = face;}
@@ -343,6 +388,7 @@ public class PlayerMovement : MonoBehaviour
             targetHitbox = player.currentSurface;
             stickingPoint = player.contactPoint;
             lastMovementVector = (player.verticalVector + player.horizontalVector).normalized;
+            player.airDashAvailable = false;
 
             ResolveStickingPrerequisites(player.currentSurface, player.contactPoint);
             player.state = state;
@@ -934,12 +980,23 @@ public class PlayerMovement : MonoBehaviour
             inputVector = Vector2.zero;
         }
     }
+
+    public void Dash(InputAction.CallbackContext context)
+    {
+        if (context.started && airDashAvailable)
+        {
+            airDashButtonDown = true;
+        }
+        if (context.canceled)
+        {
+            airDashButtonDown = false;
+        }
+    }
 }
 
 
 //TODO 
 /*
-Get the camera following the player
 Configure the movement parameters
 Configure the camera parameters
 Add the movement tech

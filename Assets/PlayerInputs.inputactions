@@ -23,6 +23,15 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": true
+                },
+                {
+                    "name": "AirDash",
+                    "type": "Button",
+                    "id": "1a15339c-e6f9-4ebd-9bdd-7bdba3b00748",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
                 }
             ],
             "bindings": [
@@ -91,6 +100,17 @@
                     "action": "Move",
                     "isComposite": false,
                     "isPartOfComposite": true
+                },
+                {
+                    "name": "",
+                    "id": "1fcbe8bb-a3ee-4fe1-8b6e-c83424578ee8",
+                    "path": "<Keyboard>/shift",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "AirDash",
+                    "isComposite": false,
+                    "isPartOfComposite": false
                 }
             ]
         }
