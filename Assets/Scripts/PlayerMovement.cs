@@ -29,8 +29,11 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private float jumpForce = 15f;
     [SerializeField] private float maxJumpTime = 2f;
     [SerializeField] private AnimationCurve jumpCurve;
+    [SerializeField] private float maxDoubleJumpTime = 0.3f;
+    [SerializeField] private AnimationCurve doubleJumpCurve;
     private bool jumpAvalailable = false;
     private bool jumpButtonDown = false;
+    private bool doubleJumpAvailable = false;
 
 
     [Header("Dash Parameters")]
@@ -38,6 +41,12 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private AnimationCurve airDashCurve;
     private bool airDashAvailable = false;
     private bool airDashButtonDown = false;
+
+
+    [Header("Movement Tech Tracking")]
+    private bool jumpUsed = true;
+    private bool airDashUsed = true;
+    private bool doubleJumpUsed = true;
 
 
     [Header("edge detection")]
@@ -56,6 +65,7 @@ public class PlayerMovement : MonoBehaviour
         Falling,
         Sticking,
         AirDash,
+        DoubleJump,
     }
 
     abstract private class PlayerState
@@ -74,6 +84,7 @@ public class PlayerMovement : MonoBehaviour
         private float maxFallTime;
         private Vector2 initialAdditionalVector;
         private Vector2 currentAdditionalVector;
+        private bool jumpButtonInitiallyPressed;
         
         public FallingState(PlayerMovement movement, float elapsedFall)
         {
@@ -85,12 +96,17 @@ public class PlayerMovement : MonoBehaviour
             elapsedFallTime = elapsedFall;
             initialAdditionalVector = player.additionalVector;
             currentAdditionalVector = player.additionalVector;
+            jumpButtonInitiallyPressed = player.jumpButtonDown;
+            if (!jumpButtonInitiallyPressed) player.doubleJumpAvailable = true;
+            else player.doubleJumpAvailable = false;
         }
 
         override public void CheckConditions()
         {
+            if (jumpButtonInitiallyPressed && !player.jumpButtonDown) player.doubleJumpAvailable = true;
             if (player.IsOnSurface()) player.playerState = new StickingState(player);
-            if (player.airDashAvailable && player.airDashButtonDown && player.inputVector.x != 0) player.playerState = new AirDashState(player);
+            else if (!player.doubleJumpUsed && player.doubleJumpAvailable && player.jumpButtonDown) player.playerState = new DoubleJumpState(player);
+            else if (player.airDashAvailable && player.airDashButtonDown && player.inputVector.x != 0 && !player.airDashUsed) player.playerState = new AirDashState(player);
         }
         override public void UpdatePlayer()
         {
@@ -124,6 +140,8 @@ public class PlayerMovement : MonoBehaviour
             maxJumpTime = player.maxJumpTime;
             player.airDashAvailable = false;
             player.state = state; 
+            player.doubleJumpAvailable = false;
+            player.jumpUsed = true;
         }
         override public void CheckConditions()
         {
@@ -143,6 +161,7 @@ public class PlayerMovement : MonoBehaviour
                 return;
             }
             else if (!grounded && !player.jumpButtonDown) {
+                player.doubleJumpAvailable = true;
                 player.playerState = new FallingState(player, elapsedJumpTime);
                 return;
             }
@@ -168,6 +187,40 @@ public class PlayerMovement : MonoBehaviour
         }
     } 
 
+    private class DoubleJumpState : PlayerState
+    {
+        public PlayerStateNum state = PlayerStateNum.DoubleJump;
+        PlayerMovement player;
+        private float timeElapsedSinceJump = 0;
+        private float doubleJumpTime;
+
+        public DoubleJumpState(PlayerMovement movement)
+        {
+            player = movement;
+            player.doubleJumpAvailable = false;
+            player.jumpAvalailable = false;
+            player.airDashAvailable = true;
+            doubleJumpTime = player.maxDoubleJumpTime;
+            player.doubleJumpUsed = true;
+        }
+
+        public override void CheckConditions()
+        {
+            timeElapsedSinceJump += Time.deltaTime;
+            if (player.IsOnSurface()) player.playerState = new StickingState(player);
+            else if (player.airDashAvailable && player.airDashButtonDown && !player.airDashUsed) player.playerState = new AirDashState(player);
+            else if (timeElapsedSinceJump >= doubleJumpTime) player.playerState = new FallingState(player, timeElapsedSinceJump);
+        }
+
+        public override void UpdatePlayer()
+        {
+            player.additionalVector.y = 0;
+            player.horizontalVector = player.movementSpeed * Vector2.Dot(player.inputVector, Vector2.left) * Vector2.left;
+            if (Vector2.Dot(player.inputVector, player.additionalVector) < 0) player.additionalVector = Vector2.zero;
+            player.verticalVector = Vector2.up * player.gravityForce * 1.5f * player.doubleJumpCurve.Evaluate(timeElapsedSinceJump/doubleJumpTime);
+        }
+    }
+
     private class AirDashState : PlayerState
     {
         public PlayerStateNum state = PlayerStateNum.AirDash;
@@ -185,6 +238,8 @@ public class PlayerMovement : MonoBehaviour
             airDashDirection = player.inputVector;
             player.verticalVector = Vector2.zero;
             player.additionalVector = Vector2.zero;
+            player.doubleJumpAvailable = false;
+            player.airDashUsed = true;
         }
 
         override public void CheckConditions()
@@ -228,6 +283,10 @@ public class PlayerMovement : MonoBehaviour
                 waitingOnJumpUp = false;
             }
             player.airDashAvailable = true;
+            player.doubleJumpAvailable = false;
+            player.jumpUsed = false;
+            player.airDashUsed = false;
+            player.doubleJumpUsed = false;
             player.IsOnSurface();
             player.state = state;
         }
@@ -389,6 +448,10 @@ public class PlayerMovement : MonoBehaviour
             stickingPoint = player.contactPoint;
             lastMovementVector = (player.verticalVector + player.horizontalVector).normalized;
             player.airDashAvailable = false;
+            player.doubleJumpAvailable = false;
+            player.airDashUsed = true;
+            player.doubleJumpUsed = true;
+            player.jumpUsed = true;
 
             ResolveStickingPrerequisites(player.currentSurface, player.contactPoint);
             player.state = state;
@@ -959,7 +1022,7 @@ public class PlayerMovement : MonoBehaviour
 
     public void Jump(InputAction.CallbackContext context)
     {
-        if (context.started && jumpAvalailable)
+        if (context.started && (jumpAvalailable || doubleJumpAvailable))
         {
             jumpButtonDown = true;
         }
