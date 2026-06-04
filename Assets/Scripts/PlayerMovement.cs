@@ -16,6 +16,7 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private float groundMovementSpeed = 7.5f;
     [SerializeField] private float gravityForce = 9.81f; 
     [SerializeField] private float terminalVelocity = 15f;
+    [SerializeField] private float rotationSpeed = 10f;
     private Vector2 horizontalVector = Vector2.zero;
     private Vector2 verticalVector = Vector2.zero;
     private Vector2 additionalVector = Vector2.zero;
@@ -23,6 +24,8 @@ public class PlayerMovement : MonoBehaviour
     private Vector2 inputVector = Vector2.zero;
     private float movementSpeed = 0f;    
     private Vector2 gravity = Vector2.down;
+    private bool rollLeftButtonDown = false;
+    private bool rollRightButtonDown = false;
     
     
     [Header("Jump Parameters")]
@@ -123,6 +126,8 @@ public class PlayerMovement : MonoBehaviour
             if (player.horizontalVector.magnitude == 0) currentAdditionalVector *= 0.95f;
             else currentAdditionalVector = initialAdditionalVector;
             player.additionalVector = currentAdditionalVector;
+            if (player.rollLeftButtonDown) player.transform.Rotate(0f, 0f, -player.rotationSpeed*Time.deltaTime);
+            if (player.rollRightButtonDown) player.transform.Rotate(0f, 0f, player.rotationSpeed*Time.deltaTime);
         }
     }
 
@@ -184,6 +189,11 @@ public class PlayerMovement : MonoBehaviour
             else player.verticalVector = Vector2.zero;
             player.horizontalVector = player.movementSpeed * Vector2.Dot(player.inputVector, Vector2.left) * Vector2.left;
             if (player.horizontalVector.magnitude > 0 && (player.additionalVector.x > 0.5 || player.additionalVector.x < -0.5)) player.horizontalVector *= 0.5f;
+            if (airborne)
+            {
+                if (player.rollLeftButtonDown) player.transform.Rotate(0f, 0f, -player.rotationSpeed*Time.deltaTime);
+                if (player.rollRightButtonDown) player.transform.Rotate(0f, 0f, player.rotationSpeed*Time.deltaTime);
+            }
         }
     } 
 
@@ -218,6 +228,8 @@ public class PlayerMovement : MonoBehaviour
             player.horizontalVector = player.movementSpeed * Vector2.Dot(player.inputVector, Vector2.left) * Vector2.left;
             if (Vector2.Dot(player.inputVector, player.additionalVector) < 0) player.additionalVector = Vector2.zero;
             player.verticalVector = Vector2.up * player.gravityForce * 1.5f * player.doubleJumpCurve.Evaluate(timeElapsedSinceJump/doubleJumpTime);
+            if (player.rollLeftButtonDown) player.transform.Rotate(0f, 0f, -player.rotationSpeed*Time.deltaTime);
+            if (player.rollRightButtonDown) player.transform.Rotate(0f, 0f, player.rotationSpeed*Time.deltaTime);
         }
     }
 
@@ -255,6 +267,8 @@ public class PlayerMovement : MonoBehaviour
             if (Vector2.Dot(player.inputVector, airDashDirection) < 0 && elapsedAirDashTime < 0.8f * airDashTime) elapsedAirDashTime = 0.8f * airDashTime;
             float dashSpeed = player.airDashCurve.Evaluate(elapsedAirDashTime/airDashTime);
             player.horizontalVector = airDashDirection * dashSpeed * 3f * player.movementSpeed; 
+            if (player.rollLeftButtonDown) player.transform.Rotate(0f, 0f, -player.rotationSpeed*Time.deltaTime);
+            if (player.rollRightButtonDown) player.transform.Rotate(0f, 0f, player.rotationSpeed*Time.deltaTime);
         }
     }
 
@@ -1053,6 +1067,30 @@ public class PlayerMovement : MonoBehaviour
         if (context.canceled)
         {
             airDashButtonDown = false;
+        }
+    }
+
+    public void RollLeft(InputAction.CallbackContext context)
+    {
+        if (context.started)
+        {
+            rollRightButtonDown = true;
+        }
+        if (context.canceled)
+        {
+            rollRightButtonDown = false;
+        }
+    }
+
+    public void RollRight(InputAction.CallbackContext context)
+    {
+        if (context.started)
+        {
+            rollLeftButtonDown = true;
+        }
+        if (context.canceled)
+        {
+            rollLeftButtonDown = false;
         }
     }
 }
