@@ -7,6 +7,7 @@ public class PlayerMovement : MonoBehaviour
 {
     private Rigidbody2D rb;
     private PolygonCollider2D collider;
+    private Animator anim;
 
     [Header("Layers")]
     [SerializeField] private LayerMask groundLayer;
@@ -26,6 +27,7 @@ public class PlayerMovement : MonoBehaviour
     private Vector2 gravity = Vector2.down;
     private bool rollLeftButtonDown = false;
     private bool rollRightButtonDown = false;
+    private bool overrideMovement = false;
     
     
     [Header("Jump Parameters")]
@@ -52,11 +54,15 @@ public class PlayerMovement : MonoBehaviour
     private bool doubleJumpUsed = true;
 
 
-    [Header("edge detection")]
+    [Header("Edge Detection")]
     [SerializeField] private float edgeThickness = 0.1f;
     [SerializeField] private float groundCheckDistance = 0.1f;
     private PolygonCollider2D currentSurface; 
     private Vector2 contactPoint;
+
+    [Header("Other")]
+    [SerializeField] private GameEvent gameEventChannel;
+    [SerializeField] public GlobalPlayerState globalPlayerState;
 
     private PlayerStateNum state = PlayerStateNum.Falling;
     private PlayerState playerState;
@@ -853,11 +859,21 @@ public class PlayerMovement : MonoBehaviour
         }  
     } 
 
+    void OnEnable()
+    {
+        gameEventChannel.OnEventRaised += HandleEvent;
+    }
+
+    void OnDisable()
+    {
+        gameEventChannel.OnEventRaised -= HandleEvent;
+    }
 
     void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
         collider = GetComponent<PolygonCollider2D>();
+        anim = GetComponent<Animator>();
         movementSpeed = groundMovementSpeed;
         playerState = new FallingState(this, 0);
     }
@@ -871,9 +887,53 @@ public class PlayerMovement : MonoBehaviour
     
     void HandleMovement()
     {
+        if (overrideMovement) {
+            rb.linearVelocity = Vector2.zero;
+            return;
+        }
         playerState.CheckConditions();
         playerState.UpdatePlayer();
         rb.linearVelocity = verticalVector + horizontalVector + additionalVector;
+    }
+
+    private void HandleEvent(EventData data)
+    {
+        switch (data.eventType)
+        {
+            case EventType.PlayerDeath : 
+                {
+                    anim.SetTrigger("death");
+                    overrideMovement = true;
+                    break;
+                }
+            case EventType.LevelReset :
+                {
+                    ResetPlayer();
+                    break;
+                }
+        }
+    }
+
+    public void DeathAnimationOver()
+    {
+        overrideMovement = false;
+        gameEventChannel.Raise(new EventData{eventType=EventType.LevelReset});
+    }
+
+    private void ResetPlayer()
+    {
+        airDashAvailable = false;
+        jumpAvalailable = false;
+        doubleJumpAvailable = false;
+        verticalVector = Vector2.zero;
+        horizontalVector = Vector2.zero;
+        additionalVector = Vector2.zero;
+        gravity = Vector2.down;
+        transform.position = globalPlayerState.respawnPoint;
+        transform.rotation = Quaternion.Euler(Vector3.zero);
+        transform.localScale = Vector3.one;
+        anim.SetTrigger("deathOver");
+        playerState = new FallingState(this, 0);   
     }
 
 
@@ -913,125 +973,6 @@ public class PlayerMovement : MonoBehaviour
             }
         }
         return foundSurface;
-    }
-
-    private bool IsStillOnSurface(int localFaceIndex)
-    {
-        Vector2[] points = collider.points;
-        Vector2 vA = transform.TransformPoint(points[localFaceIndex]);
-        Vector2 vB = transform.TransformPoint(points[(localFaceIndex + 1) % points.Length]);
-        Vector2 midPoint = (vA + vB) * 0.5f;
-        Vector2 edge = vB - vA;
-
-        float edgeLength = edge.magnitude;
-        Vector2 edgeDir = edge.normalized;
-        float angle = Mathf.Atan2(edgeDir.y, edgeDir.x) * Mathf.Rad2Deg;
-        Vector2 boxSize = new Vector2(edgeLength, edgeThickness);
-
-        RaycastHit2D hit = Physics2D.BoxCast(midPoint, boxSize, angle, gravity, edgeThickness, groundLayer);
-        if (!hit) return false;
-        if (hit.collider != currentSurface) return false;// Ensure same collider
-        float alignment = Vector2.Dot(hit.normal, -gravity); // Ensure still aligned with gravity
-        if (alignment < 0.8f) return false;
-        return true;
-    }
-
-
-    private void OnDrawGizmos()
-    {
-    if (collider == null) return;
-
-    Vector2[] colliderPoints = collider.points;
-
-    for (int i = 0; i < colliderPoints.Length; i++)
-    {
-        Vector2 vA = transform.TransformPoint(colliderPoints[i]);
-        Vector2 vB = transform.TransformPoint(
-            colliderPoints[(i + 1) % colliderPoints.Length]
-        );
-
-        Vector2 midPoint = (vA + vB) / 2f;
-        Vector2 surfaceVector = vB - vA;
-
-        Vector2 normal = new Vector2(
-            -surfaceVector.y,
-            surfaceVector.x
-        ).normalized;
-
-        Vector2 toMid = midPoint - (Vector2)transform.position;
-
-        if (Vector2.Dot(normal, toMid) > 0f)
-            normal = -normal;
-
-        float edgeLength = surfaceVector.magnitude;
-
-        float angle = Mathf.Atan2(
-            surfaceVector.y,
-            surfaceVector.x
-        ) * Mathf.Rad2Deg;
-
-        Matrix4x4 oldMatrix = Gizmos.matrix;
-
-        // Starting box
-        Gizmos.matrix = Matrix4x4.TRS(
-            midPoint,
-            Quaternion.Euler(0, 0, angle),
-            Vector3.one
-        );
-
-        Gizmos.color = Color.cyan;
-        Gizmos.DrawWireCube(
-            Vector3.zero,
-            new Vector3(edgeLength, edgeThickness, 0)
-        );
-
-        Gizmos.matrix = oldMatrix;
-
-        // Cast direction
-        Gizmos.color = Color.red;
-        Gizmos.DrawLine(
-            midPoint,
-            midPoint + normal * groundCheckDistance
-        );
-
-        // End position box
-        Vector2 endPoint = midPoint + normal * groundCheckDistance;
-
-        Gizmos.matrix = Matrix4x4.TRS(
-            endPoint,
-            Quaternion.Euler(0, 0, angle),
-            Vector3.one
-        );
-
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawWireCube(
-            Vector3.zero,
-            new Vector3(edgeLength, edgeThickness, 0)
-        );
-
-        Gizmos.matrix = oldMatrix;
-
-        // Visualize actual hit
-        RaycastHit2D hit = Physics2D.BoxCast(
-            midPoint,
-            new Vector2(edgeLength, edgeThickness),
-            angle,
-            normal,
-            groundCheckDistance,
-            groundLayer
-        );
-
-        if (hit)
-        {
-            Gizmos.color = Color.green;
-            Gizmos.DrawSphere(hit.point, 0.03f);
-
-            Gizmos.DrawLine(
-                hit.point,
-                hit.point + hit.normal * 0.2f
-            );
-        }
-    }
     }
 
     public void Jump(InputAction.CallbackContext context)
@@ -1100,6 +1041,4 @@ public class PlayerMovement : MonoBehaviour
 /*
 Configure the movement parameters
 Configure the camera parameters
-Add the movement tech
-Add obstacles and checkpoints
 */
