@@ -65,6 +65,17 @@
                     "isPartOfComposite": false
                 },
                 {
+                    "name": "",
+                    "id": "48534914-bd81-46f6-bbf5-73e699915a86",
+                    "path": "<Gamepad>/buttonSouth",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Jump",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
                     "name": "2D Vector",
                     "id": "55f235e4-0ae1-4c63-a4bc-e5090cffa8ba",
                     "path": "2DVector",
@@ -121,8 +132,30 @@
                 },
                 {
                     "name": "",
+                    "id": "e632b695-2a79-49e0-8158-f082062601b6",
+                    "path": "<Gamepad>/leftStick",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Move",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
                     "id": "1fcbe8bb-a3ee-4fe1-8b6e-c83424578ee8",
                     "path": "<Keyboard>/shift",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "AirDash",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "1bd793df-ceb3-4d14-ab93-818aaac5399a",
+                    "path": "<Gamepad>/leftTrigger",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
@@ -143,8 +176,30 @@
                 },
                 {
                     "name": "",
+                    "id": "850f57b9-986c-41e3-b92f-947b7233cf62",
+                    "path": "<Gamepad>/leftShoulder",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "RollLeft",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
                     "id": "42c49fa7-a7cb-428a-abcd-a63aa47000da",
                     "path": "<Mouse>/rightButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "RollRight",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "0b85cc1a-f9e2-411c-9806-17a4baaa47f9",
+                    "path": "<Gamepad>/rightShoulder",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
