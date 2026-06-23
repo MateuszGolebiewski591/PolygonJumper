@@ -15,4 +15,4 @@ MonoBehaviour:
   hasAirDash: 1
   hasDoubleJump: 1
   hasRotation: 1
-  respawnPoint: {x: -3, y: -3.36}
+  respawnPoint: {x: 0, y: 0}

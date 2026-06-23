@@ -68,6 +68,8 @@ public class PlayerMovement : MonoBehaviour
     [Header("Other")]
     [SerializeField] private GameEvent gameEventChannel;
     [SerializeField] public GlobalPlayerState globalPlayerState;
+    private bool gamePaused = false;
+    private bool inputsAllowed = true;
 
     private PlayerStateNum state = PlayerStateNum.Falling;
     private PlayerState playerState;
@@ -927,6 +929,7 @@ public class PlayerMovement : MonoBehaviour
         anim = GetComponent<Animator>();
         movementSpeed = groundMovementSpeed;
         playerState = new FallingState(this);
+        ResetPlayer();
     }
 
 
@@ -960,6 +963,26 @@ public class PlayerMovement : MonoBehaviour
             case EventType.LevelReset :
                 {
                     ResetPlayer();
+                    anim.SetTrigger("deathOver");
+                    break;
+                }
+            case EventType.PauseGame :
+                {
+                    gamePaused = true;
+                    inputsAllowed = false;
+                    Time.timeScale = 0f;
+                    break;
+                }
+            case EventType.ResumeGame :
+                {
+                    gamePaused = false;
+                    inputsAllowed = true;
+                    Time.timeScale = 1f;
+                    break;
+                }
+            case EventType.ResetCoreState :
+                {
+                    Time.timeScale = 1f; 
                     break;
                 }
         }
@@ -968,6 +991,12 @@ public class PlayerMovement : MonoBehaviour
     public void DeathAnimationOver()
     {
         overrideMovement = false;
+        StartCoroutine(DelayRespawn());
+    }
+
+    private IEnumerator DelayRespawn()
+    {
+        yield return new WaitForSeconds(0.2f);
         gameEventChannel.Raise(new EventData{eventType=EventType.LevelReset});
     }
 
@@ -983,7 +1012,7 @@ public class PlayerMovement : MonoBehaviour
         transform.position = globalPlayerState.respawnPoint;
         transform.rotation = Quaternion.Euler(Vector3.zero);
         transform.localScale = Vector3.one;
-        anim.SetTrigger("deathOver");
+        inputsAllowed = true;
         playerState = new FallingState(this);   
     }
 
@@ -1028,6 +1057,7 @@ public class PlayerMovement : MonoBehaviour
 
     public void Jump(InputAction.CallbackContext context)
     {
+        if (!inputsAllowed) return;
         if (context.started && (jumpAvalailable || doubleJumpAvailable))
         {
             jumpButtonDown = true;
@@ -1040,6 +1070,7 @@ public class PlayerMovement : MonoBehaviour
 
     public void Move(InputAction.CallbackContext context)
     {
+        if (!inputsAllowed) return;
         if (context.started || context.performed) {
             
             inputVector = context.ReadValue<Vector2>().normalized;
@@ -1052,6 +1083,7 @@ public class PlayerMovement : MonoBehaviour
 
     public void Dash(InputAction.CallbackContext context)
     {
+        if (!inputsAllowed) return;
         if (context.started && airDashAvailable)
         {
             airDashButtonDown = true;
@@ -1064,6 +1096,7 @@ public class PlayerMovement : MonoBehaviour
 
     public void RollLeft(InputAction.CallbackContext context)
     {
+        if (!inputsAllowed) return;
         if (context.started)
         {
             rollRightButtonDown = true;
@@ -1076,6 +1109,7 @@ public class PlayerMovement : MonoBehaviour
 
     public void RollRight(InputAction.CallbackContext context)
     {
+        if (!inputsAllowed) return;
         if (context.started)
         {
             rollLeftButtonDown = true;
@@ -1085,13 +1119,22 @@ public class PlayerMovement : MonoBehaviour
             rollLeftButtonDown = false;
         }
     }
+
+    public void PauseGame(InputAction.CallbackContext context)
+    {
+        if (context.started)
+        {
+            if (gamePaused) gameEventChannel.Raise(new EventData{eventType=EventType.ResumeGame});
+            else gameEventChannel.Raise(new EventData{eventType=EventType.PauseGame});
+        }
+    }
 }
 
 
 //TODO 
 /*
-Drop off horizontal speed
-Increase jump floatiness a little
-Configure the movement parameters
 Configure the camera parameters
+Add mid-air redirect movement tech
+
+UI:
 */

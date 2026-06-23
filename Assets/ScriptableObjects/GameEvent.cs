@@ -7,6 +7,9 @@ public enum EventType
 {
     PlayerDeath,
     LevelReset,
+    PauseGame,
+    ResumeGame,
+    ResetCoreState,
 }
 
 public struct EventData
