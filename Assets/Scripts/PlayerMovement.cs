@@ -344,7 +344,9 @@ public class PlayerMovement : MonoBehaviour
         private bool postCorrectionState = false;
         private float postCorrectionLimit = 5f;
         private float timeSincePostCorrectionStart = 0f;
-        public GroundedState(PlayerMovement movement)
+        private Vector2 currentTravelVector = Vector2.zero;
+        private Vector2 lastInputVector = Vector2.zero;
+        public GroundedState(PlayerMovement movement, int face)
         {
             player = movement;
             if (player.jumpButtonDown) {
@@ -362,9 +364,9 @@ public class PlayerMovement : MonoBehaviour
             player.doubleJumpUsed = false;
             player.IsOnSurface();
             player.state = state;
+            localFaceIndex = face;
         }
 
-        public void DefineLocalFaceIndex(int face) {localFaceIndex = face;}
         override public void CheckConditions()
         {
             Vector2[] points = player.collider.points;
@@ -374,15 +376,16 @@ public class PlayerMovement : MonoBehaviour
             Vector2 currentNormal = new Vector2(-edge.y, edge.x).normalized;
             Vector2 midpoint = (a + b) / 2f;
             if (Vector2.Dot(currentNormal, midpoint - (Vector2)player.transform.position) < 0f) currentNormal = -currentNormal;
-            if (correctionState)
+            if (correctionState) //checking if we can come out of the correction state
             {
                 if (Vector2.Dot(-currentNormal, targetNormal) > 0.99995f) {
                     correctionState = false;
                     postCorrectionState = true;
+                    CalculateNewDirection();
                 }
                 else return;
             }
-            if (waitingOnJumpUp)
+            if (waitingOnJumpUp) //Ensures holding down the jump button won't automatically trigger jumps
             {
                 if (!player.jumpButtonDown) {
                     player.jumpAvalailable = true;
@@ -396,13 +399,13 @@ public class PlayerMovement : MonoBehaviour
                 postCorrectionState = false;
                 timeSincePostCorrectionStart = 0;
             }
-            if (!supported && !postCorrectionState)
+            if (!supported && !postCorrectionState) //Handles entering correction state
             {
                 Vector2[] surfacePoints = player.currentSurface.points;
                 int closestCorner = -1;
                 float closestDistance = float.MaxValue;
 
-                for (int i = 0; i < surfacePoints.Length; i++)
+                for (int i = 0; i < surfacePoints.Length; i++) //Find the closest corner which is the one we're pivoting around
                 {
                     Vector2 worldPoint = player.currentSurface.transform.TransformPoint(surfacePoints[i]);
                     float distance = Vector2.Distance(player.transform.position, worldPoint);
@@ -412,34 +415,36 @@ public class PlayerMovement : MonoBehaviour
                         closestCorner = i;
                     }
                 }
-                int prevFace = (closestCorner - 1 + surfacePoints.Length) % surfacePoints.Length;
+                int prevFace = (closestCorner - 1 + surfacePoints.Length) % surfacePoints.Length; //Get the indexes needed for the two faces
                 int nextFace = closestCorner;
-                Vector2 prevNormal = GetSurfaceNormal(prevFace);
+                Vector2 prevNormal = GetSurfaceNormal(prevFace); //Find normals of each face and dot product with current gravity
                 Vector2 nextNormal = GetSurfaceNormal(nextFace);
                 float prevDot = Vector2.Dot(prevNormal, -player.gravity);
                 float nextDot = Vector2.Dot(nextNormal, -player.gravity);
-                if (prevDot > nextDot)
+                int nextCorner = 0;
+                if (prevDot > nextDot) //Alligned to prev face currently
                 {
-                    if (Vector2.Dot(-currentNormal, nextNormal) > 0.99995f) {
+                    if (Vector2.Dot(-currentNormal, nextNormal) > 0.99995f) { //Safety check/confirmation
                         targetNormal = prevNormal;
                         targetIndex = prevFace;
                     }
-                    else
+                    else //Expected outcome
                     {
                         targetNormal = nextNormal;
                         targetIndex = nextFace;
                     }
                 }
-                else
+                else //Currently alligned to the next face
                 {
-                    if (Vector2.Dot(-currentNormal, prevNormal) > 0.99995f) {
+                    if (Vector2.Dot(-currentNormal, prevNormal) > 0.99995f) { //Safety check/final confirmation
                         targetNormal = nextNormal;
                         targetIndex = nextFace;
                     }
-                    else
+                    else //Expected outcome
                     {
                         targetNormal = prevNormal;
                         targetIndex = prevFace;
+                        nextCorner = targetIndex;
                     }
                 }
                 stickingPoint = player.currentSurface.transform.TransformPoint(surfacePoints[closestCorner]);
@@ -448,6 +453,7 @@ public class PlayerMovement : MonoBehaviour
             }
             if (player.jumpButtonDown && !waitingOnJumpUp) player.playerState = new JumpingState(player);
         }
+
         override public void UpdatePlayer()
         {
             player.additionalVector = Vector2.zero;
@@ -476,7 +482,13 @@ public class PlayerMovement : MonoBehaviour
             else
             {
                 player.verticalVector = player.gravity;
-                player.horizontalVector = player.movementSpeed * Vector2.Dot(player.groundSurface, player.inputVector) * player.groundSurface;
+                if (player.inputVector != Vector2.zero) {
+                    if (player.inputVector != lastInputVector) currentTravelVector = player.inputVector;
+                    else if (currentTravelVector == Vector2.zero) currentTravelVector = player.inputVector;
+                }
+                else currentTravelVector = Vector2.zero;
+                lastInputVector = player.inputVector;
+                player.horizontalVector = player.movementSpeed * Vector2.Dot(player.groundSurface, currentTravelVector) * player.groundSurface;
             }
             
         }
@@ -498,6 +510,32 @@ public class PlayerMovement : MonoBehaviour
             Vector2 midpoint = (a + b) / 2f;
             if (Vector2.Dot(currentNormal, midpoint - (Vector2)player.currentSurface.bounds.center) < 0f) currentNormal = -currentNormal;
             return currentNormal;
+        }
+
+        private void CalculateNewDirection()
+        {
+            Vector2[] surfacePoints = player.currentSurface.points;
+            int closestCorner = -1;
+            float closestDistance = float.MaxValue;
+
+            for (int i = 0; i < surfacePoints.Length; i++) //Find the closest corner which is the one we're pivoting around
+            {
+                Vector2 worldPoint = player.currentSurface.transform.TransformPoint(surfacePoints[i]);
+                float distance = Vector2.Distance(player.transform.position, worldPoint);
+                if (distance < closestDistance)
+                {
+                    closestDistance = distance;
+                    closestCorner = i;
+                }
+            }
+            Vector2 currentPoint = player.currentSurface.transform.TransformPoint(surfacePoints[closestCorner]);
+            Vector2 nextPoint = player.currentSurface.transform.TransformPoint(surfacePoints[(closestCorner + 1) % surfacePoints.Length]);
+            Vector2 prevPoint = player.currentSurface.transform.TransformPoint(surfacePoints[(closestCorner - 1 + surfacePoints.Length) % surfacePoints.Length]);
+            Vector2 nextEdge = nextPoint - currentPoint;
+            Vector2 prevEdge = prevPoint - currentPoint; 
+            if (Vector2.Dot(targetNormal, nextEdge) < 0.00005 && Vector2.Dot(targetNormal, nextEdge) > -0.00005) currentTravelVector = nextEdge;
+            else if (Vector2.Dot(targetNormal, prevEdge) < 0.00005 && Vector2.Dot(targetNormal, prevEdge) > -0.00005) currentTravelVector = prevEdge;
+            currentTravelVector.Normalize();
         }
     } 
 
@@ -539,11 +577,7 @@ public class PlayerMovement : MonoBehaviour
             Vector2 currentNormal = new Vector2(-edge.y, edge.x).normalized;
             Vector2 midpoint = (a + b) / 2f;
             if (Vector2.Dot(currentNormal, midpoint - (Vector2)player.transform.position) < 0f) currentNormal = -currentNormal;
-            if (Vector2.Dot(-currentNormal, targetNormal) > 0.99995f) {
-                GroundedState state = new GroundedState(player);
-                state.DefineLocalFaceIndex(localFaceIndex);
-                player.playerState = state;
-            }
+            if (Vector2.Dot(-currentNormal, targetNormal) > 0.99995f) player.playerState = new GroundedState(player, localFaceIndex);
         }
         override public void UpdatePlayer() 
         {
