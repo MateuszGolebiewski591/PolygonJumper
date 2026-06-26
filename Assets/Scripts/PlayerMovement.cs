@@ -68,8 +68,10 @@ public class PlayerMovement : MonoBehaviour
     [Header("Other")]
     [SerializeField] private GameEvent gameEventChannel;
     [SerializeField] public GlobalPlayerState globalPlayerState;
+    [SerializeField] private CameraAnchor cameraAnchor;
     private bool gamePaused = false;
     private bool inputsAllowed = true;
+    private Vector2 cameraInputVector = Vector2.zero;
 
     private PlayerStateNum state = PlayerStateNum.Falling;
     private PlayerState playerState;
@@ -970,10 +972,11 @@ public class PlayerMovement : MonoBehaviour
     void FixedUpdate()
     {
         HandleMovement();
+        HandleCameraAnchor();
     }
 
     
-    void HandleMovement()
+    private void HandleMovement()
     {
         if (overrideMovement) {
             rb.linearVelocity = Vector2.zero;
@@ -982,6 +985,11 @@ public class PlayerMovement : MonoBehaviour
         playerState.CheckConditions();
         playerState.UpdatePlayer();
         rb.linearVelocity = verticalVector + horizontalVector + additionalVector;
+    }
+
+    private void HandleCameraAnchor()
+    {
+        //cameraAnchor.ApplyOffset(cameraInputVector);
     }
 
     private void HandleEvent(EventData data)
@@ -1161,6 +1169,20 @@ public class PlayerMovement : MonoBehaviour
             if (gamePaused) gameEventChannel.Raise(new EventData{eventType=EventType.ResumeGame});
             else gameEventChannel.Raise(new EventData{eventType=EventType.PauseGame});
         }
+    }
+
+    public void MoveCamera(InputAction.CallbackContext context)
+    {
+        if (!inputsAllowed) return;
+        if (context.started || context.performed) {
+            
+            cameraInputVector = context.ReadValue<Vector2>().normalized;   
+        }
+        if (context.canceled)
+        {
+            cameraInputVector = Vector2.zero;
+        }
+        cameraAnchor.ApplyOffset(cameraInputVector);
     }
 }
 
