@@ -32,6 +32,8 @@ public class PlayerMovement : MonoBehaviour
     private bool rollLeftButtonDown = false;
     private bool rollRightButtonDown = false;
     private bool overrideMovement = false;
+    private bool beingRedirected = false;
+    private RedirectPad redirectPad;
     
     
     [Header("Jump Parameters")]
@@ -51,6 +53,10 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private AnimationCurve airDashCurve;
     private bool airDashAvailable = false;
     private bool airDashButtonDown = false;
+
+    [Header("Redirection Parameters")]
+    [SerializeField] private float releaseTime = 0.3f;
+    [SerializeField] private float correctionTime = 0.1f;
 
 
     [Header("Movement Tech Tracking")]
@@ -84,6 +90,7 @@ public class PlayerMovement : MonoBehaviour
         Sticking,
         AirDash,
         DoubleJump,
+        Redirection,
     }
 
     abstract private class PlayerState
@@ -124,6 +131,7 @@ public class PlayerMovement : MonoBehaviour
             elapsedFallTime += Time.deltaTime;
             if (jumpButtonInitiallyPressed && !player.jumpButtonDown) player.doubleJumpAvailable = true;
             if (player.IsOnSurface()) player.playerState = new StickingState(player);
+            else if (player.beingRedirected) player.playerState = new RedirectionState(player);
             else if (!player.doubleJumpUsed && player.doubleJumpAvailable && player.jumpButtonDown) player.playerState = new DoubleJumpState(player);
             else if (player.airDashAvailable && player.airDashButtonDown && player.inputVector.x != 0 && !player.airDashUsed) player.playerState = new AirDashState(player);
         }
@@ -198,21 +206,11 @@ public class PlayerMovement : MonoBehaviour
             if (elapsedJumpTime >= maxJumpTime) jumpCompleted = true;
             if (jumpCompleted && player.additionalVector.y <= 0) timeSinceJumpEnd = maxJumpEndTime;
 
-            if (grounded && airborne) {
-                player.playerState = new StickingState(player);
-                return;
-            }
-            else if (player.airDashAvailable && player.airDashButtonDown && player.inputVector.x != 0)
-            {
-                player.playerState = new AirDashState(player);
-                return;
-            }
-            else if (player.doubleJumpAvailable && player.jumpButtonDown)
-            {
-                player.playerState = new DoubleJumpState(player);
-                return;
-            }
-            if (timeSinceJumpEnd >= maxJumpEndTime) {
+            if (grounded && airborne) player.playerState = new StickingState(player);
+            else if (player.beingRedirected) player.playerState = new RedirectionState(player);
+            else if (player.airDashAvailable && player.airDashButtonDown && player.inputVector.x != 0) player.playerState = new AirDashState(player);
+            else if (player.doubleJumpAvailable && player.jumpButtonDown) player.playerState = new DoubleJumpState(player);
+            else if (timeSinceJumpEnd >= maxJumpEndTime) {
                 player.playerState = new FallingState(player);
                 player.additionalVector = Vector2.zero;
             }
@@ -272,6 +270,7 @@ public class PlayerMovement : MonoBehaviour
         {
             timeElapsedSinceJump += Time.deltaTime;
             if (player.IsOnSurface()) player.playerState = new StickingState(player);
+            else if (player.beingRedirected) player.playerState = new RedirectionState(player);
             else if (player.airDashAvailable && player.airDashButtonDown && !player.airDashUsed) player.playerState = new AirDashState(player);
             else if (timeElapsedSinceJump >= doubleJumpTime) player.playerState = new FallingState(player);
         }
@@ -319,6 +318,7 @@ public class PlayerMovement : MonoBehaviour
             elapsedAirDashTime += Time.deltaTime;
             if (jumpButtonInitiallyPressed && !player.jumpButtonDown) player.doubleJumpAvailable = true;
             if (grounded) player.playerState = new StickingState(player);
+            else if (player.beingRedirected) player.playerState = new RedirectionState(player);
             else if (!player.doubleJumpUsed && player.doubleJumpAvailable && player.jumpButtonDown) player.playerState = new DoubleJumpState(player);
             else if (elapsedAirDashTime >= airDashTime) player.playerState = new FallingState(player);
         }
@@ -330,6 +330,112 @@ public class PlayerMovement : MonoBehaviour
             player.horizontalVector = airDashDirection * dashSpeed * 3f * player.movementSpeed; 
             if (player.rollLeftButtonDown) player.transform.Rotate(0f, 0f, -player.rotationSpeed*Time.deltaTime);
             if (player.rollRightButtonDown) player.transform.Rotate(0f, 0f, player.rotationSpeed*Time.deltaTime);
+        }
+    }
+
+    private class RedirectionState : PlayerState
+    {
+        public PlayerStateNum state = PlayerStateNum.Redirection;
+        PlayerMovement player;
+        private Stage stage = Stage.correction;
+        private Vector2 preservedMotion;
+        private bool jumpButtonInitiallyPressed;
+        private bool releaseAvailable;
+        private float timeSinceRelease = 0f;
+        private float cumulativeLateralDecay = 1f;
+        private float elapsedCorrectionTime = 0f;
+        private Vector3 initialPlayerPosition;
+
+        public RedirectionState(PlayerMovement movement)
+        {
+            player = movement;
+            preservedMotion = player.horizontalVector + player.verticalVector + player.additionalVector;
+            player.horizontalVector = Vector2.zero;
+            player.verticalVector = Vector2.zero;
+            player.additionalVector = Vector2.zero;
+            jumpButtonInitiallyPressed = player.jumpButtonDown;
+            if (jumpButtonInitiallyPressed) releaseAvailable = false;
+            else releaseAvailable = true;
+            initialPlayerPosition = player.transform.position;
+            player.redirectPad.LoadPad(Mathf.Atan2(preservedMotion.y, preservedMotion.x) * Mathf.Rad2Deg);
+        }
+
+        private enum Stage
+        {
+            correction,
+            player, 
+            ejection,
+        }
+
+        public override void CheckConditions()
+        {
+            if (jumpButtonInitiallyPressed && !player.jumpButtonDown) releaseAvailable = true;
+            switch (stage)
+            {
+                case Stage.correction : {
+                        elapsedCorrectionTime += Time.deltaTime;
+                        if (elapsedCorrectionTime > player.correctionTime) {
+                            stage = Stage.player;
+                            player.transform.position = player.redirectPad.transform.position;
+                        }
+                        break;
+                    }
+                case Stage.player :
+                    {
+                        if (player.jumpButtonDown && releaseAvailable) {
+                            player.additionalVector = preservedMotion;
+                            player.beingRedirected = false;
+                            stage = Stage.ejection;
+                            player.redirectPad.UnloadPad();
+                            player.redirectPad = null;
+                        }
+                        break;
+                    }
+                case Stage.ejection :
+                    {
+                        timeSinceRelease += Time.deltaTime;
+                        if (timeSinceRelease > player.releaseTime) {
+                            if (player.additionalVector.y > 0) player.additionalVector.y = 0;
+                            player.playerState = new FallingState(player);
+                        }
+                        break;
+                    }
+            }
+        }
+
+        public override void UpdatePlayer()
+        {
+            switch (stage)
+            {
+                case Stage.correction : {
+                        player.transform.position = Vector3.Lerp(initialPlayerPosition, player.redirectPad.transform.position, Mathf.Clamp01(elapsedCorrectionTime/player.correctionTime));
+                        float angle = Mathf.Atan2(preservedMotion.y, preservedMotion.x) * Mathf.Rad2Deg;
+                        player.redirectPad.UpdatePointer(angle);
+                        break;
+                    }
+                case Stage.player :
+                    {
+                        if (player.rollLeftButtonDown) {
+                            player.transform.Rotate(0f, 0f, -player.rotationSpeed*Time.deltaTime);
+                            preservedMotion = Quaternion.Euler(0, 0, -player.rotationSpeed*Time.deltaTime) * preservedMotion;
+                        }
+                        if (player.rollRightButtonDown) {
+                            player.transform.Rotate(0f, 0f, player.rotationSpeed*Time.deltaTime);
+                            preservedMotion = Quaternion.Euler(0, 0, player.rotationSpeed*Time.deltaTime) * preservedMotion;
+                        }
+                        float angle = Mathf.Atan2(preservedMotion.y, preservedMotion.x) * Mathf.Rad2Deg;
+                        player.redirectPad.UpdatePointer(angle);
+                        break;
+                    }
+                case Stage.ejection :
+                    {
+                        cumulativeLateralDecay *= player.lateralMovementDecay;
+                        player.additionalVector = preservedMotion;
+                        player.additionalVector.x *= cumulativeLateralDecay;
+                        if (preservedMotion.y > 0) player.additionalVector.y =  preservedMotion.y * (1 - timeSinceRelease/player.releaseTime);
+                        break;
+                    }
+            }
         }
     }
 
@@ -972,7 +1078,6 @@ public class PlayerMovement : MonoBehaviour
     void FixedUpdate()
     {
         HandleMovement();
-        HandleCameraAnchor();
     }
 
     
@@ -985,11 +1090,6 @@ public class PlayerMovement : MonoBehaviour
         playerState.CheckConditions();
         playerState.UpdatePlayer();
         rb.linearVelocity = verticalVector + horizontalVector + additionalVector;
-    }
-
-    private void HandleCameraAnchor()
-    {
-        //cameraAnchor.ApplyOffset(cameraInputVector);
     }
 
     private void HandleEvent(EventData data)
@@ -1055,6 +1155,8 @@ public class PlayerMovement : MonoBehaviour
         transform.rotation = Quaternion.Euler(Vector3.zero);
         transform.localScale = Vector3.one;
         inputsAllowed = true;
+        redirectPad = null;
+        beingRedirected = false;
         playerState = new FallingState(this);   
     }
 
@@ -1097,10 +1199,16 @@ public class PlayerMovement : MonoBehaviour
         return foundSurface;
     }
 
+    public void TriggerRedirection(RedirectPad pad)
+    {
+        beingRedirected = true;
+        redirectPad = pad;
+    }
+
     public void Jump(InputAction.CallbackContext context)
     {
         if (!inputsAllowed) return;
-        if (context.started && (jumpAvalailable || doubleJumpAvailable))
+        if (context.started && (jumpAvalailable || doubleJumpAvailable || beingRedirected))
         {
             jumpButtonDown = true;
         }
@@ -1190,7 +1298,8 @@ public class PlayerMovement : MonoBehaviour
 //TODO 
 /*
 Configure the camera parameters
-Add mid-air redirect movement tech
+Add arrow to redirection tech
+Fix movement whilst falling
 
 UI:
 */
