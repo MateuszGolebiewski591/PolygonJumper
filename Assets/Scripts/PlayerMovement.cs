@@ -473,6 +473,7 @@ public class PlayerMovement : MonoBehaviour
             player.IsOnSurface();
             player.state = state;
             localFaceIndex = face;
+            player.additionalVector = Vector2.zero;
         }
 
         override public void CheckConditions()
@@ -564,7 +565,6 @@ public class PlayerMovement : MonoBehaviour
 
         override public void UpdatePlayer()
         {
-            player.additionalVector = Vector2.zero;
             if (correctionState)
             {
                 player.verticalVector = Vector2.zero;
@@ -597,8 +597,7 @@ public class PlayerMovement : MonoBehaviour
                 else currentTravelVector = Vector2.zero;
                 lastInputVector = player.inputVector;
                 player.horizontalVector = player.movementSpeed * Vector2.Dot(player.groundSurface, currentTravelVector) * player.groundSurface;
-            }
-            
+            } 
         }
 
         private bool HasSupport(Vector2 midpoint)
@@ -674,6 +673,9 @@ public class PlayerMovement : MonoBehaviour
 
             ResolveStickingPrerequisites(player.currentSurface, player.contactPoint);
             player.state = state;
+            player.additionalVector = Vector2.zero;
+            player.verticalVector = Vector2.zero;
+            player.horizontalVector = Vector2.zero;
         }
 
         override public void CheckConditions()
@@ -689,9 +691,6 @@ public class PlayerMovement : MonoBehaviour
         }
         override public void UpdatePlayer() 
         {
-            player.additionalVector = Vector2.zero;
-            player.verticalVector = Vector2.zero;
-            player.horizontalVector = Vector2.zero;
             Vector2[] points = player.collider.points;
             Vector2 a = player.collider.transform.TransformPoint(points[localFaceIndex]);
             Vector2 b = player.collider.transform.TransformPoint(points[(localFaceIndex + 1) % points.Length]);
@@ -1079,7 +1078,6 @@ public class PlayerMovement : MonoBehaviour
     {
         HandleMovement();
     }
-
     
     private void HandleMovement()
     {
@@ -1091,6 +1089,8 @@ public class PlayerMovement : MonoBehaviour
         playerState.UpdatePlayer();
         rb.linearVelocity = verticalVector + horizontalVector + additionalVector;
     }
+
+    
 
     private void HandleEvent(EventData data)
     {
