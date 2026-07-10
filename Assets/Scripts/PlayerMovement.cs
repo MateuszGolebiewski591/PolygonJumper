@@ -63,6 +63,9 @@ public class PlayerMovement : MonoBehaviour
     private bool jumpUsed = true;
     private bool airDashUsed = true;
     private bool doubleJumpUsed = true;
+    private bool hasAirDash;
+    private bool hasDoubleJump;
+    private bool hasRotation;
 
 
     [Header("Edge Detection")]
@@ -131,9 +134,9 @@ public class PlayerMovement : MonoBehaviour
             elapsedFallTime += Time.deltaTime;
             if (jumpButtonInitiallyPressed && !player.jumpButtonDown) player.doubleJumpAvailable = true;
             if (player.IsOnSurface()) player.playerState = new StickingState(player);
-            else if (player.beingRedirected) player.playerState = new RedirectionState(player);
-            else if (!player.doubleJumpUsed && player.doubleJumpAvailable && player.jumpButtonDown) player.playerState = new DoubleJumpState(player);
-            else if (player.airDashAvailable && player.airDashButtonDown && player.inputVector.x != 0 && !player.airDashUsed) player.playerState = new AirDashState(player);
+            else if (player.beingRedirected && player.hasRotation) player.playerState = new RedirectionState(player);
+            else if (!player.doubleJumpUsed && player.doubleJumpAvailable && player.jumpButtonDown && player.hasDoubleJump) player.playerState = new DoubleJumpState(player);
+            else if (player.airDashAvailable && player.airDashButtonDown && player.inputVector.x != 0 && !player.airDashUsed && player.hasAirDash) player.playerState = new AirDashState(player);
         }
         override public void UpdatePlayer()
         {
@@ -148,6 +151,10 @@ public class PlayerMovement : MonoBehaviour
             }
             player.verticalVector = cumulativeVerticalVector;
             player.horizontalVector = player.movementSpeed * Vector2.Dot(player.inputVector, Vector2.left) * Vector2.left;
+            if (player.horizontalVector.x * initialAdditionalVector.x < 0) {
+                initialAdditionalVector.x = 0;
+                player.additionalVector.x = 0;
+            }
            
             if (player.horizontalVector.x + player.additionalVector.x > player.maxAirMovementSpeed) //Limits air movement speed
             {
@@ -207,9 +214,9 @@ public class PlayerMovement : MonoBehaviour
             if (jumpCompleted && player.additionalVector.y <= 0) timeSinceJumpEnd = maxJumpEndTime;
 
             if (grounded && airborne) player.playerState = new StickingState(player);
-            else if (player.beingRedirected) player.playerState = new RedirectionState(player);
-            else if (player.airDashAvailable && player.airDashButtonDown && player.inputVector.x != 0) player.playerState = new AirDashState(player);
-            else if (player.doubleJumpAvailable && player.jumpButtonDown) player.playerState = new DoubleJumpState(player);
+            else if (player.beingRedirected && player.hasRotation) player.playerState = new RedirectionState(player);
+            else if (player.airDashAvailable && player.airDashButtonDown && player.inputVector.x != 0 && player.hasAirDash) player.playerState = new AirDashState(player);
+            else if (player.doubleJumpAvailable && player.jumpButtonDown && player.hasDoubleJump) player.playerState = new DoubleJumpState(player);
             else if (timeSinceJumpEnd >= maxJumpEndTime) {
                 player.playerState = new FallingState(player);
                 player.additionalVector = Vector2.zero;
@@ -270,8 +277,8 @@ public class PlayerMovement : MonoBehaviour
         {
             timeElapsedSinceJump += Time.deltaTime;
             if (player.IsOnSurface()) player.playerState = new StickingState(player);
-            else if (player.beingRedirected) player.playerState = new RedirectionState(player);
-            else if (player.airDashAvailable && player.airDashButtonDown && !player.airDashUsed) player.playerState = new AirDashState(player);
+            else if (player.beingRedirected && player.hasRotation) player.playerState = new RedirectionState(player);
+            else if (player.airDashAvailable && player.airDashButtonDown && !player.airDashUsed && player.hasAirDash) player.playerState = new AirDashState(player);
             else if (timeElapsedSinceJump >= doubleJumpTime) player.playerState = new FallingState(player);
         }
 
@@ -318,8 +325,8 @@ public class PlayerMovement : MonoBehaviour
             elapsedAirDashTime += Time.deltaTime;
             if (jumpButtonInitiallyPressed && !player.jumpButtonDown) player.doubleJumpAvailable = true;
             if (grounded) player.playerState = new StickingState(player);
-            else if (player.beingRedirected) player.playerState = new RedirectionState(player);
-            else if (!player.doubleJumpUsed && player.doubleJumpAvailable && player.jumpButtonDown) player.playerState = new DoubleJumpState(player);
+            else if (player.beingRedirected && player.hasRotation) player.playerState = new RedirectionState(player);
+            else if (!player.doubleJumpUsed && player.doubleJumpAvailable && player.jumpButtonDown && player.hasDoubleJump) player.playerState = new DoubleJumpState(player);
             else if (elapsedAirDashTime >= airDashTime) player.playerState = new FallingState(player);
         }
 
@@ -1157,6 +1164,9 @@ public class PlayerMovement : MonoBehaviour
         inputsAllowed = true;
         redirectPad = null;
         beingRedirected = false;
+        hasAirDash = globalPlayerState.hasAirDash;
+        hasDoubleJump = globalPlayerState.hasDoubleJump;
+        hasRotation = globalPlayerState.hasRotation;
         playerState = new FallingState(this);   
     }
 
@@ -1298,8 +1308,9 @@ public class PlayerMovement : MonoBehaviour
 //TODO 
 /*
 Configure the camera parameters
-Add arrow to redirection tech
-Fix movement whilst falling
+Hazard generation script
+Save system
+Expand on the player state system
 
 UI:
 */
