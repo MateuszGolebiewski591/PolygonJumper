@@ -78,6 +78,8 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private GameEvent gameEventChannel;
     [SerializeField] public GlobalPlayerState globalPlayerState;
     [SerializeField] private CameraAnchor cameraAnchor;
+    [SerializeField] private GameObject goal;
+    private Material shineMaterial;
     private bool gamePaused = false;
     private bool inputsAllowed = true;
     private Vector2 cameraInputVector = Vector2.zero;
@@ -1075,6 +1077,7 @@ public class PlayerMovement : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
         collider = GetComponent<PolygonCollider2D>();
         anim = GetComponent<Animator>();
+        shineMaterial = GetComponentInChildren<SpriteRenderer>().material;
         movementSpeed = groundMovementSpeed;
         playerState = new FallingState(this);
         ResetPlayer();
@@ -1084,6 +1087,13 @@ public class PlayerMovement : MonoBehaviour
     void FixedUpdate()
     {
         HandleMovement();
+    }
+
+    void Update()
+    {
+        Vector2 lightDirection = (goal.transform.position - transform.position).normalized;
+        Vector2 localLightDirection = transform.InverseTransformDirection(lightDirection);
+        shineMaterial.SetVector("_PlayerToLightVector", localLightDirection);
     }
     
     private void HandleMovement()
