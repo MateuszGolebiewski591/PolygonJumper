@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 6536065542667225163}
   - component: {fileID: 4405010437484038761}
   - component: {fileID: 788212731146060232}
+  - component: {fileID: 4691252744713469604}
   m_Layer: 0
   m_Name: Septagon
   m_TagString: Untagged
@@ -55,7 +56,7 @@ MonoBehaviour:
   - {x: -1.735535, y: -3.6038754}
   - {x: -3.8997116, y: -0.890084}
   - {x: -3.1273253, y: 2.4939601}
-  polygonTriangles: 000000000200000001000000000000000300000002000000000000000400000003000000000000000500000004000000000000000600000005000000
+  polygonTriangles: 000000000100000002000000000000000200000003000000000000000300000004000000000000000400000005000000000000000500000006000000000000000600000007000000000000000700000001000000
   polygonSides: 7
   polygonRadius: 4
   rotation: 0
@@ -84,7 +85,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 10754, guid: 0000000000000000f000000000000000, type: 0}
+  - {fileID: 2100000, guid: e373e9bbc46d0594eac8eaf788bea8bb, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -116,6 +117,22 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3791694787257060229}
   m_Mesh: {fileID: 0}
+--- !u!114 &4691252744713469604
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3791694787257060229}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3e18c3b1cd2d7a4479a26e3c565f3f1f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: '::'
+  borderColour: {r: 0, g: 1, b: 0, a: 1}
+  outerColour: {r: 0, g: 1, b: 0.9254465, a: 1}
+  innerColour: {r: 1, g: 0.8761399, b: 0, a: 1}
+  centreColour: {r: 1, g: 0.016236318, b: 0, a: 1}
 --- !u!1 &3970653176236757006
 GameObject:
   m_ObjectHideFlags: 0

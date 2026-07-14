@@ -96,6 +96,7 @@ GameObject:
   - component: {fileID: 8695062376824523260}
   - component: {fileID: 5632747218868213096}
   - component: {fileID: 2465719002939355469}
+  - component: {fileID: 5044015405874468820}
   m_Layer: 0
   m_Name: Pentagon
   m_TagString: Untagged
@@ -137,7 +138,7 @@ MonoBehaviour:
   - {x: 2.3511407, y: -3.2360682}
   - {x: -2.3511415, y: -3.2360678}
   - {x: -3.804226, y: 1.2360685}
-  polygonTriangles: 000000000200000001000000000000000300000002000000000000000400000003000000
+  polygonTriangles: 000000000100000002000000000000000200000003000000000000000300000004000000000000000400000005000000000000000500000001000000
   polygonSides: 5
   polygonRadius: 4
   rotation: 0
@@ -166,7 +167,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 10754, guid: 0000000000000000f000000000000000, type: 0}
+  - {fileID: 2100000, guid: e373e9bbc46d0594eac8eaf788bea8bb, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -198,3 +199,19 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2912716331694395383}
   m_Mesh: {fileID: 0}
+--- !u!114 &5044015405874468820
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2912716331694395383}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3e18c3b1cd2d7a4479a26e3c565f3f1f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PolygonAppearance
+  borderColour: {r: 0.96862745, g: 0.2784314, b: 0.68235296, a: 1}
+  outerColour: {r: 0, g: 0.15294118, b: 1, a: 1}
+  innerColour: {r: 1, g: 0, b: 0.9882353, a: 1}
+  centreColour: {r: 1, g: 1, b: 1, a: 1}

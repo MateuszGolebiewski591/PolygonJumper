@@ -16,31 +16,28 @@ public class PolygonGenerator : MonoBehaviour
     [SerializeField] private int polygonSides;
     [SerializeField] private float polygonRadius;
     [SerializeField] private float rotation;
+    private Vector2[] uvs;
 
     void Awake()
     {
         polyCollider = GetComponentInChildren<PolygonCollider2D>();
         mesh = new Mesh();
         this.GetComponent<MeshFilter>().mesh = mesh;
-        DrawFilled(polygonSides,polygonRadius);
+        DrawFilled(polygonSides,polygonRadius);  
     }
     
     #endregion
- 
-    private void DrawFilled(int sides, float radius)
+
+    private int[] DrawFilledTriangles(Vector2[] points)
     {
-        polygonPoints = GetCircumferencePoints(sides,radius).ToArray();
-        polygonTriangles = DrawFilledTriangles(polygonPoints);
-        mesh.Clear();
-        List<Vector3> meshPoints = new List<Vector3>();
-        foreach (Vector2 point in polygonPoints)
+        List<int> newTriangles = new List<int>();
+        for(int i = 0; i < points.Length; i++)
         {
-            meshPoints.Add(new Vector3(point.x, point.y, 0));
+            newTriangles.Add(0);
+            newTriangles.Add(i + 1);
+            newTriangles.Add((i + 1) % points.Length + 1);
         }
-        mesh.vertices = meshPoints.ToArray();
-        mesh.triangles = polygonTriangles;
-        polyCollider.pathCount = 1;
-        polyCollider.SetPath(0, polygonPoints);
+        return newTriangles.ToArray();
     }
     
     private List<Vector2> GetCircumferencePoints(int sides, float radius)   
@@ -58,17 +55,36 @@ public class PolygonGenerator : MonoBehaviour
         }
         return points;
     }
-    
-    private int[] DrawFilledTriangles(Vector2[] points)
-    {   
-        int triangleAmount = points.Length - 2;
-        List<int> newTriangles = new List<int>();
-        for(int i = 0; i<triangleAmount; i++)
+
+    private void DrawFilled(int sides, float radius)
+    {
+        polygonPoints = GetCircumferencePoints(sides, radius).ToArray();
+        polygonTriangles = DrawFilledTriangles(polygonPoints);
+        mesh.Clear();
+
+        List<Vector3> meshPoints = new List<Vector3>();        
+        meshPoints.Add(Vector3.zero); // Add centre vertex
+        foreach (Vector2 point in polygonPoints)// Add outside vertices
         {
-            newTriangles.Add(0);
-            newTriangles.Add(i+2);
-            newTriangles.Add(i+1);
+            meshPoints.Add(new Vector3(point.x, point.y, 0));
         }
-        return newTriangles.ToArray();
+        mesh.vertices = meshPoints.ToArray();
+        uvs = new Vector2[meshPoints.Count];
+
+        for(int i = 0; i < meshPoints.Count; i++)
+        {
+            Vector3 point = meshPoints[i];
+            uvs[i] = new Vector2(
+                point.x / radius * 0.5f + 0.5f,
+                point.y / radius * 0.5f + 0.5f
+            );
+        }
+
+        mesh.uv = uvs;
+        mesh.triangles = polygonTriangles;
+        mesh.RecalculateNormals();
+        mesh.RecalculateBounds();
+        polyCollider.pathCount = 1;
+        polyCollider.SetPath(0, polygonPoints);
     }
 }
