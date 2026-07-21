@@ -7,6 +7,7 @@ public class PolygonAppearance : MonoBehaviour
     public Color outerColour = Color.red;
     public Color innerColour = Color.blue;
     public Color centreColour = Color.white;
+    public float preset = 0;
 
     private MeshRenderer meshRenderer;
     private MaterialPropertyBlock propertyBlock;
@@ -42,6 +43,7 @@ public class PolygonAppearance : MonoBehaviour
         propertyBlock.SetColor("_Inner1", outerColour);
         propertyBlock.SetColor("_Inner2", innerColour);
         propertyBlock.SetColor("_Inner3", centreColour);
+        propertyBlock.SetFloat("_Preset", preset);
 
         meshRenderer.SetPropertyBlock(propertyBlock);
     }

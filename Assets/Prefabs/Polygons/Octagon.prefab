@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 2757534932027769209}
   - component: {fileID: 5593668978955274153}
   - component: {fileID: 4781753027328464624}
+  - component: {fileID: 371472305555567648}
   m_Layer: 0
   m_Name: Octagon
   m_TagString: Untagged
@@ -56,7 +57,7 @@ MonoBehaviour:
   - {x: -2.8284276, y: -2.8284266}
   - {x: -4, y: 0.000000047699523}
   - {x: -2.8284261, y: 2.828428}
-  polygonTriangles: 000000000200000001000000000000000300000002000000000000000400000003000000000000000500000004000000000000000600000005000000000000000700000006000000
+  polygonTriangles: 000000000100000002000000000000000200000003000000000000000300000004000000000000000400000005000000000000000500000006000000000000000600000007000000000000000700000008000000000000000800000001000000
   polygonSides: 8
   polygonRadius: 4
   rotation: 0
@@ -85,7 +86,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 10754, guid: 0000000000000000f000000000000000, type: 0}
+  - {fileID: 2100000, guid: d5c912197b15d4146b0723dd61ae5512, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -117,6 +118,23 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4285187922420030500}
   m_Mesh: {fileID: 0}
+--- !u!114 &371472305555567648
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4285187922420030500}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3e18c3b1cd2d7a4479a26e3c565f3f1f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PolygonAppearance
+  borderColour: {r: 1, g: 0.0169281, b: 0, a: 1}
+  outerColour: {r: 1, g: 0, b: 0, a: 1}
+  innerColour: {r: 0, g: 0, b: 1, a: 1}
+  centreColour: {r: 1, g: 1, b: 1, a: 1}
+  preset: 0
 --- !u!1 &7873704854361467863
 GameObject:
   m_ObjectHideFlags: 0
