@@ -10,6 +10,7 @@ public enum EventType
     PauseGame,
     ResumeGame,
     ResetCoreState,
+    LevelComplete,
 }
 
 public struct EventData

@@ -42,7 +42,7 @@ public class CameraAnchor : MonoBehaviour
 
     void OnDisable()
     {
-        gameEvent.OnEventRaised += HandleEvent; 
+        gameEvent.OnEventRaised -= HandleEvent; 
     }
 
     private void HandleEvent(EventData data)

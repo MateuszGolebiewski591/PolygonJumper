@@ -14,7 +14,7 @@ public class CameraManager : MonoBehaviour
 
     void OnDisable()
     {
-        gameEvent.OnEventRaised += HandleEvent; 
+        gameEvent.OnEventRaised -= HandleEvent; 
     }
 
     void Awake()

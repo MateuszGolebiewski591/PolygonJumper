@@ -83,6 +83,7 @@ public class PlayerMovement : MonoBehaviour
     private bool gamePaused = false;
     private bool inputsAllowed = true;
     private Vector2 cameraInputVector = Vector2.zero;
+    private bool levelCompleted = false;
 
     private PlayerStateNum state = PlayerStateNum.Falling;
     private PlayerState playerState;
@@ -1144,6 +1145,13 @@ public class PlayerMovement : MonoBehaviour
                     Time.timeScale = 1f; 
                     break;
                 }
+            case EventType.LevelComplete :
+                {
+                    levelCompleted = true;
+                    inputsAllowed = false;
+                    Time.timeScale = 0f;
+                    break;
+                }
         }
     }
 
@@ -1292,6 +1300,7 @@ public class PlayerMovement : MonoBehaviour
 
     public void PauseGame(InputAction.CallbackContext context)
     {
+        if (levelCompleted) return;
         if (context.started)
         {
             if (gamePaused) gameEventChannel.Raise(new EventData{eventType=EventType.ResumeGame});
@@ -1318,9 +1327,9 @@ public class PlayerMovement : MonoBehaviour
 //TODO 
 /*
 Configure the camera parameters
-Hazard generation script
-Save system
-Expand on the player state system
+Build prototype level
+Fix camera movement bug after death
+Configure player movement parameters even more
 
 UI:
 */

@@ -5,6 +5,7 @@ public class UIManager : MonoBehaviour
 {
     [Header("Menus")]
     [SerializeField] private GameObject PauseMenu;
+    [SerializeField] private GameObject LevelCompleteMenu;
 
     [Header("References")]
     [SerializeField] private GameEvent gameEventChannel;
@@ -31,6 +32,11 @@ public class UIManager : MonoBehaviour
             case EventType.ResumeGame :
                 {
                     PauseMenu.SetActive(false);
+                    break;
+                }
+            case EventType.LevelComplete :
+                {
+                    LevelCompleteMenu.SetActive(true);
                     break;
                 }
         }
