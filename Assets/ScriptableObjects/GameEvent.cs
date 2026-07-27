@@ -11,6 +11,7 @@ public enum EventType
     ResumeGame,
     ResetCoreState,
     LevelComplete,
+    CheckpointReached,
 }
 
 public struct EventData

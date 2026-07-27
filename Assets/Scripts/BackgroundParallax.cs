@@ -10,6 +10,7 @@ public class BackgroundParallax : MonoBehaviour
     [SerializeField] private Transform cameraPosition;
     private Vector3 previousCameraPosition;
     private Vector2[] offsets;
+    private Vector2 positionalDifference = Vector2.zero;
 
     void OnEnable()
     {
@@ -46,10 +47,21 @@ public class BackgroundParallax : MonoBehaviour
         {
             case EventType.LevelReset :
                 {
+                    previousCameraPosition = cameraPosition.position;
                     for (int i = 0; i < backgroundLayers.Length; i++)
                     {
-                        backgroundLayers[i].transform.localPosition = offsets[i];
+                        backgroundLayers[i].transform.localPosition = offsets[i] + positionalDifference;
                     }
+                    break;
+                }
+            case EventType.CheckpointReached :
+                {
+                    for (int i = 0; i < backgroundLayers.Length; i++)
+                    {
+                        offsets[i] = backgroundLayers[i].transform.localPosition;
+                    }
+                    previousCameraPosition = cameraPosition.position;
+                    positionalDifference = globalPlayerState.respawnPoint - new Vector2(cameraPosition.position.x, cameraPosition.position.y);
                     break;
                 }
         }
