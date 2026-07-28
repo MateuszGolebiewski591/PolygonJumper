@@ -20,7 +20,10 @@ public class SaveManager : MonoBehaviour
             globalPlayerState.hasAirDash = false;
             globalPlayerState.hasDoubleJump = false;
             globalPlayerState.hasRotation = false;
-            CreateSave();
+            globalPlayerState.levelsUnlocked = new bool[16];
+            globalPlayerState.levelsUnlocked[0] = true;
+            for (int i = 1; i < 16; i++) globalPlayerState.levelsUnlocked[i] = false;
+            Save();
         }
         else gameEventChannel.Raise(new EventData{eventType=EventType.LevelReset});
     }
@@ -30,6 +33,7 @@ public class SaveManager : MonoBehaviour
         SaveData save = new SaveData{hasAirDash=globalPlayerState.hasAirDash, 
         hasDoubleJump=globalPlayerState.hasDoubleJump, 
         hasRotation=globalPlayerState.hasRotation,
+        levelsUnlocked=globalPlayerState.levelsUnlocked,
         };
 
         string json = JsonUtility.ToJson(save);
@@ -58,6 +62,7 @@ public class SaveManager : MonoBehaviour
             globalPlayerState.hasAirDash=save.hasAirDash;
             globalPlayerState.hasDoubleJump=save.hasDoubleJump;
             globalPlayerState.hasRotation=save.hasRotation;
+            globalPlayerState.levelsUnlocked = save.levelsUnlocked;
             return true;
         }
         return false;

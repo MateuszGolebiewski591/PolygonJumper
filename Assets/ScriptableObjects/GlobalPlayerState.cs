@@ -7,4 +7,5 @@ public class GlobalPlayerState : ScriptableObject
     public bool hasDoubleJump;
     public bool hasRotation;
     public Vector2 respawnPoint;
+    public bool[] levelsUnlocked;
 }

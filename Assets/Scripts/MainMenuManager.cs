@@ -5,10 +5,20 @@ public class MainMenuManager : MonoBehaviour
 {
     [SerializeField] private GameObject frontPanel;
     [SerializeField] private GameObject levelPanel;
-
+    [SerializeField] private GlobalPlayerState globalPlayerState;
+    [SerializeField] private LevelData[] levelData;
     public void LoadLevel(string levelName)
     {
-        SceneManager.LoadSceneAsync(levelName);
+        foreach (LevelData data in levelData)
+        {
+            if (data.sceneName == levelName)
+            {
+                Debug.Log(data.levelIndex);
+                
+                if (globalPlayerState.levelsUnlocked[data.levelIndex]) SceneManager.LoadSceneAsync(levelName);
+            }
+        }
+        
     }
 
     public void QuitGame()
