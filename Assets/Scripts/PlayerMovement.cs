@@ -1116,14 +1116,13 @@ public class PlayerMovement : MonoBehaviour
         {
             case EventType.PlayerDeath : 
                 {
-                    anim.SetTrigger("death");
+                    GetComponentInChildren<SpriteRenderer>().enabled = false;
                     overrideMovement = true;
                     break;
                 }
             case EventType.LevelReset :
                 {
                     ResetPlayer();
-                    anim.SetTrigger("deathOver");
                     break;
                 }
             case EventType.PauseGame :
@@ -1155,20 +1154,10 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 
-    public void DeathAnimationOver()
-    {
-        overrideMovement = false;
-        StartCoroutine(DelayRespawn());
-    }
-
-    private IEnumerator DelayRespawn()
-    {
-        yield return new WaitForSeconds(0.2f);
-        gameEventChannel.Raise(new EventData{eventType=EventType.LevelReset});
-    }
-
     private void ResetPlayer()
     {
+        GetComponentInChildren<SpriteRenderer>().enabled = true;
+        overrideMovement = false;
         airDashAvailable = false;
         jumpAvalailable = false;
         doubleJumpAvailable = false;
