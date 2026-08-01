@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!114 &-2088622842918663770
+--- !u!114 &-7716166544937413205
 MonoBehaviour:
   m_ObjectHideFlags: 11
   m_CorrespondingSourceObject: {fileID: 0}
@@ -20,8 +20,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: RotatingColours
-  m_Shader: {fileID: -6465566751694194690, guid: 02f4ae213c4ddc546bb06f58827822cc, type: 3}
+  m_Name: New Material
+  m_Shader: {fileID: -6465566751694194690, guid: 9201aa1f73dfec24f967dd7fe98f4bf3, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -68,17 +68,12 @@ Material:
     m_Ints: []
     m_Floats:
     - _EnableExternalAlpha: 0
-    - _Preset: 0
     - _QueueControl: 0
     - _QueueOffset: 0
-    - _RotationSpeed: 0.3
     - _ZWrite: 0
     m_Colors:
-    - _BorderColour: {r: 1, g: 0, b: 0.065859765, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
-    - _Color1: {r: 1, g: 0, b: 0.2616086, a: 1}
-    - _Color2: {r: 0.6919613, g: 0, b: 1, a: 1}
-    - _Outer: {r: 1, g: 0, b: 0, a: 1}
+    - _CustomColor: {r: 1, g: 1, b: 1, a: 1}
     - _RendererColor: {r: 1, g: 1, b: 1, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

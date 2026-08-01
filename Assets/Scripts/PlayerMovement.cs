@@ -74,6 +74,16 @@ public class PlayerMovement : MonoBehaviour
     private PolygonCollider2D currentSurface; 
     private Vector2 contactPoint;
 
+    [Header("Animations")]
+    [SerializeField] private SpriteRenderer sprite;
+    [SerializeField] private SpriteRenderer pulseSprite;
+    [SerializeField] private AnimationCurve pulseSizeCurve;
+    [SerializeField] private AnimationCurve pulseOpacityCurve;
+    [SerializeField] private float pulseLength = 0.2f;
+    [SerializeField] private float startingOpacity = 0.4f;
+    [SerializeField] private float pulsePower = 1.5f;
+
+
     [Header("Other")]
     [SerializeField] private GameEvent gameEventChannel;
     [SerializeField] public GlobalPlayerState globalPlayerState;
@@ -484,6 +494,7 @@ public class PlayerMovement : MonoBehaviour
             player.state = state;
             localFaceIndex = face;
             player.additionalVector = Vector2.zero;
+            player.currentSurface.transform.parent.GetComponentInChildren<PolygonPulseAppearance>().Pulse();
         }
 
         override public void CheckConditions()
@@ -686,6 +697,7 @@ public class PlayerMovement : MonoBehaviour
             player.additionalVector = Vector2.zero;
             player.verticalVector = Vector2.zero;
             player.horizontalVector = Vector2.zero;
+            player.Pulse();
         }
 
         override public void CheckConditions()
@@ -1116,7 +1128,7 @@ public class PlayerMovement : MonoBehaviour
         {
             case EventType.PlayerDeath : 
                 {
-                    GetComponentInChildren<SpriteRenderer>().enabled = false;
+                    sprite.enabled = false;
                     overrideMovement = true;
                     break;
                 }
@@ -1156,7 +1168,7 @@ public class PlayerMovement : MonoBehaviour
 
     private void ResetPlayer()
     {
-        GetComponentInChildren<SpriteRenderer>().enabled = true;
+        sprite.enabled = true;
         overrideMovement = false;
         airDashAvailable = false;
         jumpAvalailable = false;
@@ -1221,6 +1233,31 @@ public class PlayerMovement : MonoBehaviour
         beingRedirected = true;
         redirectPad = pad;
     }
+
+    private void Pulse()
+    {
+        StartCoroutine(PlayPulse());
+    }
+
+    private IEnumerator PlayPulse()
+    {
+        float timeElapsed = 0f;
+        Color colour = pulseSprite.color;
+        pulseSprite.transform.localScale = Vector3.one;
+        pulseSprite.enabled = true;
+        while (timeElapsed < pulseLength)
+        {
+            timeElapsed += Time.deltaTime;
+            float newSize = pulsePower * pulseSizeCurve.Evaluate(timeElapsed/pulseLength);
+            float newOpacity = pulseOpacityCurve.Evaluate(timeElapsed/pulseLength);
+            pulseSprite.transform.localScale = new Vector3(newSize, newSize, newSize);
+            pulseSprite.color = new Color(colour.r, colour.g, colour.b, newOpacity*startingOpacity);
+            yield return null;
+        }
+        pulseSprite.enabled = false;
+    }
+    
+    
 
     public void Jump(InputAction.CallbackContext context)
     {

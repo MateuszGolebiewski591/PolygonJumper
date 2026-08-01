@@ -10,20 +10,22 @@ public class PolygonGenerator : MonoBehaviour
     Mesh mesh;
     [SerializeField] private Vector2[] polygonPoints;
     [SerializeField] private int[] polygonTriangles;
+    [SerializeField] private MeshFilter pulseMesh;
     private PolygonCollider2D polyCollider;
  
     
-    [SerializeField] private int polygonSides;
-    [SerializeField] private float polygonRadius;
-    [SerializeField] private float rotation;
+    [SerializeField] public int polygonSides;
+    [SerializeField] public float polygonRadius;
+    [SerializeField] public float rotation;
     private Vector2[] uvs;
 
     void Awake()
     {
         polyCollider = GetComponentInChildren<PolygonCollider2D>();
         mesh = new Mesh();
-        this.GetComponent<MeshFilter>().mesh = mesh;
+        GetComponent<MeshFilter>().sharedMesh = mesh;
         DrawFilled(polygonSides,polygonRadius);  
+        if (pulseMesh) pulseMesh.sharedMesh = mesh;
     }
     
     #endregion
