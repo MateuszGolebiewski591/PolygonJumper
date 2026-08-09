@@ -1353,8 +1353,8 @@ public class PlayerMovement : MonoBehaviour
 //TODO 
 /*
 Configure the camera parameters
-Build prototype level
 Fix camera movement bug after death
+Fix bug where environment moves after death (switch to background movement based on distance from start to current checkpoint)
 Configure player movement parameters even more
 
 UI:

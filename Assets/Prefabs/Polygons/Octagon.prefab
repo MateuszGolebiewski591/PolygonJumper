@@ -309,7 +309,7 @@ MonoBehaviour:
     m_RotationOrder: 4
   pulseLength: 0.3
   startingOpacity: 0.4
-  pulseStrength: 1
+  pulseStrength: 1.1
 --- !u!1 &7873704854361467863
 GameObject:
   m_ObjectHideFlags: 0

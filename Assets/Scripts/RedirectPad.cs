@@ -6,13 +6,20 @@ public class RedirectPad : MonoBehaviour
     [SerializeField] private float triggerDistance = 0.2f;
     [SerializeField] private float cooldownTime = 1.5f;
     [SerializeField] private GameObject pointer;
+    [SerializeField] private SpriteRenderer core;
+    [SerializeField] private SpriteRenderer[] fins;
     private Coroutine activeTracking = null;
     private bool cooldownActive = false;
     private Animator anim;
+    private MaterialPropertyBlock propertyBlock;
 
     void Awake()
     {
         anim = GetComponent<Animator>();
+        propertyBlock = new MaterialPropertyBlock();
+        propertyBlock.SetFloat("_Activation", 0f);
+        core.SetPropertyBlock(propertyBlock);
+        foreach (SpriteRenderer fin in fins) fin.SetPropertyBlock(propertyBlock);
     }
 
     void OnTriggerEnter2D(Collider2D other)
@@ -56,10 +63,16 @@ public class RedirectPad : MonoBehaviour
     {
         UpdatePointer(angle);
         pointer.gameObject.SetActive(true);
+        propertyBlock.SetFloat("_Activation", 1f);
+        core.SetPropertyBlock(propertyBlock);
+        foreach (SpriteRenderer fin in fins) fin.SetPropertyBlock(propertyBlock);
     }
 
     public void UnloadPad()
     {
         pointer.gameObject.SetActive(false);
+        propertyBlock.SetFloat("_Activation", 0f);
+        core.SetPropertyBlock(propertyBlock);
+        foreach (SpriteRenderer fin in fins) fin.SetPropertyBlock(propertyBlock);
     }
 }
