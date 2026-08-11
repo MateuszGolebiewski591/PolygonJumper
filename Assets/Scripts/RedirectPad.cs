@@ -8,6 +8,7 @@ public class RedirectPad : MonoBehaviour
     [SerializeField] private GameObject pointer;
     [SerializeField] private SpriteRenderer core;
     [SerializeField] private SpriteRenderer[] fins;
+    [SerializeField] private RedirectionPadPulse pulseHandler;
     private Coroutine activeTracking = null;
     private bool cooldownActive = false;
     private Animator anim;
@@ -74,5 +75,7 @@ public class RedirectPad : MonoBehaviour
         propertyBlock.SetFloat("_Activation", 0f);
         core.SetPropertyBlock(propertyBlock);
         foreach (SpriteRenderer fin in fins) fin.SetPropertyBlock(propertyBlock);
+        pulseHandler.Pulse();
+        anim.SetTrigger("Spin");
     }
 }
