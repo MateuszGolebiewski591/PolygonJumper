@@ -10,7 +10,7 @@ public class BackgroundParallax : MonoBehaviour
     [SerializeField] private Transform cameraPosition;
     private Vector3 previousCameraPosition;
     private Vector2[] offsets;
-    private Vector2 positionalDifference = Vector2.zero;
+    private Vector2[] respawnOffsets;
 
     void OnEnable()
     {
@@ -25,9 +25,11 @@ public class BackgroundParallax : MonoBehaviour
     void Awake()
     {
         offsets = new Vector2[backgroundLayers.Length];
+        respawnOffsets = new Vector2[backgroundLayers.Length];
         for (int i = 0; i < backgroundLayers.Length; i++)
         {
             offsets[i] = backgroundLayers[i].transform.localPosition;
+            Debug.Log(offsets[i]);
         }
     }
 
@@ -47,21 +49,23 @@ public class BackgroundParallax : MonoBehaviour
         {
             case EventType.LevelReset :
                 {
-                    previousCameraPosition = cameraPosition.position;
+                    previousCameraPosition = globalPlayerState.respawnPoint;
                     for (int i = 0; i < backgroundLayers.Length; i++)
                     {
-                        backgroundLayers[i].transform.localPosition = offsets[i] + positionalDifference;
+                        backgroundLayers[i].transform.localPosition = offsets[i];
+                        Debug.Log(offsets[i]);
                     }
                     break;
                 }
             case EventType.CheckpointReached :
                 {
+                    Vector2 cam = cameraPosition.position;
+                    Vector2 difference = globalPlayerState.respawnPoint - cam;
                     for (int i = 0; i < backgroundLayers.Length; i++)
                     {
-                        offsets[i] = backgroundLayers[i].transform.localPosition;
+                        respawnOffsets[i] = new Vector3(-difference.x*layerMovementSpeedsX[i], -difference.y*layerMovementSpeedsY[i], 0);
+                        offsets[i] = new Vector2(backgroundLayers[i].transform.localPosition.x + respawnOffsets[i].x, backgroundLayers[i].transform.localPosition.y + respawnOffsets[i].y);
                     }
-                    previousCameraPosition = cameraPosition.position;
-                    positionalDifference = globalPlayerState.respawnPoint - new Vector2(cameraPosition.position.x, cameraPosition.position.y);
                     break;
                 }
         }
