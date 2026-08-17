@@ -26,11 +26,7 @@ public class BackgroundParallax : MonoBehaviour
     {
         offsets = new Vector2[backgroundLayers.Length];
         respawnOffsets = new Vector2[backgroundLayers.Length];
-        for (int i = 0; i < backgroundLayers.Length; i++)
-        {
-            offsets[i] = backgroundLayers[i].transform.localPosition;
-            Debug.Log(offsets[i]);
-        }
+        for (int i = 0; i < backgroundLayers.Length; i++) offsets[i] = backgroundLayers[i].transform.localPosition;    
     }
 
     void Update()
@@ -50,11 +46,7 @@ public class BackgroundParallax : MonoBehaviour
             case EventType.LevelReset :
                 {
                     previousCameraPosition = globalPlayerState.respawnPoint;
-                    for (int i = 0; i < backgroundLayers.Length; i++)
-                    {
-                        backgroundLayers[i].transform.localPosition = offsets[i];
-                        Debug.Log(offsets[i]);
-                    }
+                    for (int i = 0; i < backgroundLayers.Length; i++) backgroundLayers[i].transform.localPosition = offsets[i];
                     break;
                 }
             case EventType.CheckpointReached :

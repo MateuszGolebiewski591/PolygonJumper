@@ -13,7 +13,7 @@ public class LevelComplete : MonoBehaviour
 
     void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.CompareTag("Player")) gameEventChannel.Raise(new EventData{eventType=EventType.LevelComplete});
+        if (other.CompareTag("Player")) other.GetComponent<PlayerMovement>().TriggerPortal(this);
     }
 
     

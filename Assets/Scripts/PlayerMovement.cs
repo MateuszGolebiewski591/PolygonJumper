@@ -7,7 +7,6 @@ public class PlayerMovement : MonoBehaviour
 {
     private Rigidbody2D rb;
     private PolygonCollider2D collider;
-    private Animator anim;
 
     [Header("Layers")]
     [SerializeField] private LayerMask groundLayer;
@@ -34,6 +33,8 @@ public class PlayerMovement : MonoBehaviour
     private bool overrideMovement = false;
     private bool beingRedirected = false;
     private RedirectPad redirectPad;
+    private bool beingTeleported = false;
+    private LevelComplete portal;
     
     
     [Header("Jump Parameters")]
@@ -107,6 +108,7 @@ public class PlayerMovement : MonoBehaviour
         AirDash,
         DoubleJump,
         Redirection,
+        Completion,
     }
 
     abstract private class PlayerState
@@ -144,6 +146,10 @@ public class PlayerMovement : MonoBehaviour
 
         override public void CheckConditions()
         {
+            if (player.beingTeleported) {
+                player.playerState = new CompletionState(player);
+                return;
+            }
             elapsedFallTime += Time.deltaTime;
             if (jumpButtonInitiallyPressed && !player.jumpButtonDown) player.doubleJumpAvailable = true;
             if (player.IsOnSurface()) player.playerState = new StickingState(player);
@@ -212,6 +218,10 @@ public class PlayerMovement : MonoBehaviour
         }
         override public void CheckConditions()
         {
+            if (player.beingTeleported) {
+                player.playerState = new CompletionState(player);
+                return;
+            }
             elapsedJumpTime += Time.deltaTime;
             bool grounded = player.IsOnSurface();
             if (!grounded && player.jumpButtonDown && !player.airDashAvailable)
@@ -288,6 +298,10 @@ public class PlayerMovement : MonoBehaviour
 
         public override void CheckConditions()
         {
+            if (player.beingTeleported) {
+                player.playerState = new CompletionState(player);
+                return;
+            }
             timeElapsedSinceJump += Time.deltaTime;
             if (player.IsOnSurface()) player.playerState = new StickingState(player);
             else if (player.beingRedirected && player.hasRotation) player.playerState = new RedirectionState(player);
@@ -334,6 +348,10 @@ public class PlayerMovement : MonoBehaviour
 
         override public void CheckConditions()
         {
+            if (player.beingTeleported) {
+                player.playerState = new CompletionState(player);
+                return;
+            }
             bool grounded = player.IsOnSurface();
             elapsedAirDashTime += Time.deltaTime;
             if (jumpButtonInitiallyPressed && !player.jumpButtonDown) player.doubleJumpAvailable = true;
@@ -389,6 +407,10 @@ public class PlayerMovement : MonoBehaviour
 
         public override void CheckConditions()
         {
+            if (player.beingTeleported) {
+                player.playerState = new CompletionState(player);
+                return;
+            }
             if (jumpButtonInitiallyPressed && !player.jumpButtonDown) releaseAvailable = true;
             switch (stage)
             {
@@ -459,6 +481,38 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 
+    private class CompletionState : PlayerState
+    {
+        public PlayerStateNum state = PlayerStateNum.Completion;
+        PlayerMovement player;
+        private float elapsedCorrectionTime = 0;
+        private Vector3 initialPlayerPosition;
+        private Vector3 initialPlayerScale;
+
+        public CompletionState(PlayerMovement movement)
+        {
+            player = movement;
+            initialPlayerPosition = player.transform.position;
+            initialPlayerScale = player.transform.localScale;
+            player.horizontalVector = Vector2.zero;
+            player.verticalVector = Vector2.zero;
+            player.additionalVector = Vector2.zero;
+        }
+
+        override public void CheckConditions()
+        {
+            elapsedCorrectionTime += Time.deltaTime;
+            if (elapsedCorrectionTime > player.correctionTime) player.gameEventChannel.Raise(new EventData{eventType=EventType.PortalEntered});
+        }
+
+        override public void UpdatePlayer()
+        {
+            float t = Mathf.Clamp01(elapsedCorrectionTime/player.correctionTime);
+            player.transform.position = Vector3.Lerp(initialPlayerPosition, player.portal.transform.position, t);
+            player.sprite.transform.localScale = Vector3.Lerp(initialPlayerScale, Vector3.zero, t);
+        }
+    }
+
     private class GroundedState : PlayerState
     {
         public PlayerStateNum state = PlayerStateNum.Grounded;
@@ -499,6 +553,10 @@ public class PlayerMovement : MonoBehaviour
 
         override public void CheckConditions()
         {
+            if (player.beingTeleported) {
+                player.playerState = new CompletionState(player);
+                return;
+            }
             Vector2[] points = player.collider.points;
             Vector2 a = player.collider.transform.TransformPoint(points[localFaceIndex]);
             Vector2 b = player.collider.transform.TransformPoint(points[(localFaceIndex + 1) % points.Length]);
@@ -667,8 +725,6 @@ public class PlayerMovement : MonoBehaviour
         }
     } 
 
-    
-
     private class StickingState : PlayerState
     {
         public PlayerStateNum state = PlayerStateNum.Sticking;
@@ -702,6 +758,10 @@ public class PlayerMovement : MonoBehaviour
 
         override public void CheckConditions()
         {
+            if (player.beingTeleported) {
+                player.playerState = new CompletionState(player);
+                return;
+            }
             Vector2[] points = player.collider.points;
             Vector2 a = player.collider.transform.TransformPoint(points[localFaceIndex]);
             Vector2 b = player.collider.transform.TransformPoint(points[(localFaceIndex + 1) % points.Length]);
@@ -1089,7 +1149,6 @@ public class PlayerMovement : MonoBehaviour
     {
         rb = GetComponent<Rigidbody2D>();
         collider = GetComponent<PolygonCollider2D>();
-        anim = GetComponent<Animator>();
         shineMaterial = GetComponentInChildren<SpriteRenderer>().material;
         movementSpeed = groundMovementSpeed;
         playerState = new FallingState(this);
@@ -1156,6 +1215,11 @@ public class PlayerMovement : MonoBehaviour
                     Time.timeScale = 1f; 
                     break;
                 }
+            case EventType.PortalEntered :
+                {
+                    overrideMovement = true;
+                    break;
+                }
             case EventType.LevelComplete :
                 {
                     levelCompleted = true;
@@ -1180,9 +1244,12 @@ public class PlayerMovement : MonoBehaviour
         transform.position = globalPlayerState.respawnPoint;
         transform.rotation = Quaternion.Euler(Vector3.zero);
         transform.localScale = Vector3.one;
+        sprite.transform.localScale = Vector3.one;
         inputsAllowed = true;
         redirectPad = null;
         beingRedirected = false;
+        portal = null;
+        beingTeleported = false;
         hasAirDash = globalPlayerState.hasAirDash;
         hasDoubleJump = globalPlayerState.hasDoubleJump;
         hasRotation = globalPlayerState.hasRotation;
@@ -1232,6 +1299,12 @@ public class PlayerMovement : MonoBehaviour
     {
         beingRedirected = true;
         redirectPad = pad;
+    }
+
+    public void TriggerPortal(LevelComplete completionPortal)
+    {
+        beingTeleported = true;
+        portal = completionPortal;
     }
 
     private void Pulse()
@@ -1354,7 +1427,6 @@ public class PlayerMovement : MonoBehaviour
 /*
 Configure the camera parameters
 Fix camera movement bug after death
-Fix bug where environment moves after death (switch to background movement based on distance from start to current checkpoint)
 Configure player movement parameters even more
 
 UI:
