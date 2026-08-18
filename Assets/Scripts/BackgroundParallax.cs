@@ -9,8 +9,8 @@ public class BackgroundParallax : MonoBehaviour
     [SerializeField] private GlobalPlayerState globalPlayerState;
     [SerializeField] private Transform cameraPosition;
     private Vector3 previousCameraPosition;
-    private Vector2[] offsets;
-    private Vector2[] respawnOffsets;
+    private Vector3[] offsets;
+    private Vector3[] respawnOffsets;
 
     void OnEnable()
     {
@@ -24,8 +24,8 @@ public class BackgroundParallax : MonoBehaviour
 
     void Awake()
     {
-        offsets = new Vector2[backgroundLayers.Length];
-        respawnOffsets = new Vector2[backgroundLayers.Length];
+        offsets = new Vector3[backgroundLayers.Length];
+        respawnOffsets = new Vector3[backgroundLayers.Length];
         for (int i = 0; i < backgroundLayers.Length; i++) offsets[i] = backgroundLayers[i].transform.localPosition;    
     }
 
@@ -56,7 +56,7 @@ public class BackgroundParallax : MonoBehaviour
                     for (int i = 0; i < backgroundLayers.Length; i++)
                     {
                         respawnOffsets[i] = new Vector3(-difference.x*layerMovementSpeedsX[i], -difference.y*layerMovementSpeedsY[i], 0);
-                        offsets[i] = new Vector2(backgroundLayers[i].transform.localPosition.x + respawnOffsets[i].x, backgroundLayers[i].transform.localPosition.y + respawnOffsets[i].y);
+                        offsets[i] = new Vector3(backgroundLayers[i].transform.localPosition.x + respawnOffsets[i].x, backgroundLayers[i].transform.localPosition.y + respawnOffsets[i].y, offsets[i].z);
                     }
                     break;
                 }
