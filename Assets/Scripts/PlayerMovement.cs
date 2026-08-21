@@ -396,6 +396,7 @@ public class PlayerMovement : MonoBehaviour
             else releaseAvailable = true;
             initialPlayerPosition = player.transform.position;
             player.redirectPad.LoadPad(Mathf.Atan2(preservedMotion.y, preservedMotion.x) * Mathf.Rad2Deg);
+            player.cameraAnchor.CenterAnchor();
         }
 
         private enum Stage

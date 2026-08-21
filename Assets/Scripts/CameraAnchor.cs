@@ -11,9 +11,16 @@ public class CameraAnchor : MonoBehaviour
     private Vector2 lastPlayerLocation;
     private Vector2 savedAnchorLocation;
     private bool positionFreezing = false;
+    private bool center = false;
 
     void LateUpdate()
     {
+        if (center)
+        {
+            transform.position = player.transform.position;
+            center = false;
+            return;
+        }
         if (positionFreezing)
         {
             Vector2 currentPlayerLocation = player.transform.position;
@@ -26,7 +33,7 @@ public class CameraAnchor : MonoBehaviour
         {
             float newX = player.transform.position.x;
             float newY = transform.position.y;
-            if (Mathf.Abs(transform.position.y - player.transform.position.y) > maxY)
+            if (Mathf.Abs(transform.position.y - player.transform.position.y) >= maxY)
             {
                 newY = player.transform.position.y + Mathf.Sign(transform.position.y - player.transform.position.y) * maxY;
             }
@@ -87,5 +94,10 @@ public class CameraAnchor : MonoBehaviour
                 savedAnchorLocation = Vector2.zero;
             }   
         }
-    }    
+    } 
+
+    public void CenterAnchor()
+    {
+        center = true;
+    }   
 }
