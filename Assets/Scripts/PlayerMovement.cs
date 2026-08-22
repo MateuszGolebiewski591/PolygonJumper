@@ -396,7 +396,6 @@ public class PlayerMovement : MonoBehaviour
             else releaseAvailable = true;
             initialPlayerPosition = player.transform.position;
             player.redirectPad.LoadPad(Mathf.Atan2(preservedMotion.y, preservedMotion.x) * Mathf.Rad2Deg);
-            player.cameraAnchor.CenterAnchor();
         }
 
         private enum Stage
@@ -420,6 +419,7 @@ public class PlayerMovement : MonoBehaviour
                         if (elapsedCorrectionTime > player.correctionTime) {
                             stage = Stage.player;
                             player.transform.position = player.redirectPad.transform.position;
+                            player.cameraAnchor.CenterAnchor();
                         }
                         break;
                     }
@@ -1426,8 +1426,6 @@ public class PlayerMovement : MonoBehaviour
 
 //TODO 
 /*
-Configure the camera parameters
-Fix camera movement bug after death
 Configure player movement parameters even more
 
 UI:

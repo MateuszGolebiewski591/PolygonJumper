@@ -14,6 +14,11 @@ public class LevelManager : MonoBehaviour
         else Instance = this;
     }
 
+    void Start()
+    {
+        gameEventChannel.Raise(new EventData{eventType=EventType.LevelReset});
+    }
+
     void OnEnable()
     {
         gameEventChannel.OnEventRaised += HandleEvent;
@@ -30,7 +35,7 @@ public class LevelManager : MonoBehaviour
         {
             case EventType.LevelComplete :
                 {
-                    globalPlayerState.levelsUnlocked[levelData.levelIndex+1%globalPlayerState.levelsUnlocked.Length] = true;
+                    globalPlayerState.levelsUnlocked[(levelData.levelIndex + 1) % globalPlayerState.levelsUnlocked.Length] = true;
                     SaveManager.Instance.Save();
                     break;
                 }

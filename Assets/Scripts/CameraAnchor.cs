@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections;
 
 public class CameraAnchor : MonoBehaviour
 {
@@ -7,11 +8,17 @@ public class CameraAnchor : MonoBehaviour
     [SerializeField] private GameEvent gameEvent;
     [SerializeField] private GlobalPlayerState globalPlayerState;
     [SerializeField] private float cameraOffsetAmount = 3f;
+    [SerializeField] private float timeBeforeAnchorReset = 1f;
+    [SerializeField] private float centerSpeed = 1f;
     private Vector2 cameraOffset = Vector2.zero;
     private Vector2 lastPlayerLocation;
+    private Vector2 referencePlayerPosition;
     private Vector2 savedAnchorLocation;
     private bool positionFreezing = false;
     private bool center = false;
+    private Coroutine timer = null;
+    private bool delayedCenter = false;
+    private Vector2 referenceVector = Vector2.zero;
 
     void LateUpdate()
     {
@@ -19,7 +26,34 @@ public class CameraAnchor : MonoBehaviour
         {
             transform.position = player.transform.position;
             center = false;
+            delayedCenter = false;
+            referencePlayerPosition = player.transform.position;
+            if (timer != null) StopCoroutine(timer);
             return;
+        }
+        if (Vector2.Distance(referencePlayerPosition, player.transform.position) < 0.001f && Vector2.Distance(transform.position, player.transform.position) > 0.001f && !positionFreezing)
+        {
+            if (delayedCenter && !center)
+            {
+                transform.position = Vector2.SmoothDamp(transform.position, player.transform.position, ref referenceVector, centerSpeed);
+                if (Vector2.Distance(transform.position, player.transform.position) < 0.01f) {
+                    transform.position = player.transform.position;
+                    delayedCenter = false;
+                    referenceVector = Vector2.zero;
+                }
+                return;
+            }
+            referencePlayerPosition = player.transform.position;
+            if (timer != null) return;
+            timer = StartCoroutine(ResetDelay());
+            return;
+        }
+        else if (timer != null) 
+        {
+            StopCoroutine(timer);
+            timer = null;
+            delayedCenter = false;
+            referenceVector = Vector2.zero;
         }
         if (positionFreezing)
         {
@@ -39,7 +73,7 @@ public class CameraAnchor : MonoBehaviour
             }
             transform.position = new Vector2(newX, newY) + cameraOffset * cameraOffsetAmount;
         }
-        
+        referencePlayerPosition = player.transform.position;
     }
 
     void OnEnable()
@@ -99,5 +133,13 @@ public class CameraAnchor : MonoBehaviour
     public void CenterAnchor()
     {
         center = true;
-    }   
+    }  
+
+    private IEnumerator ResetDelay()
+    {
+        yield return new WaitForSeconds(timeBeforeAnchorReset);
+        delayedCenter = true;
+        referenceVector = Vector2.zero;
+        timer = null;
+    }  
 }

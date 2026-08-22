@@ -25,7 +25,6 @@ public class SaveManager : MonoBehaviour
             for (int i = 1; i < 16; i++) globalPlayerState.levelsUnlocked[i] = false;
             Save();
         }
-        else gameEventChannel.Raise(new EventData{eventType=EventType.LevelReset});
     }
 
     public void Save()
