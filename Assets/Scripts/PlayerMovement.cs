@@ -129,6 +129,7 @@ public class PlayerMovement : MonoBehaviour
         private bool jumpButtonInitiallyPressed;
         private float cumulativeLateralDecay = 1f;
         private Vector2 cumulativeVerticalVector;
+        private bool fromRedirection = false;
         
         public FallingState(PlayerMovement movement)
         {
@@ -142,6 +143,11 @@ public class PlayerMovement : MonoBehaviour
             cumulativeVerticalVector = player.verticalVector;
             if (!jumpButtonInitiallyPressed) player.doubleJumpAvailable = true;
             else player.doubleJumpAvailable = false;
+        }
+
+        public void FromRedirection()
+        {
+            fromRedirection = true;
         }
 
         override public void CheckConditions()
@@ -175,7 +181,7 @@ public class PlayerMovement : MonoBehaviour
                 player.additionalVector.x = 0;
             }
            
-            if (player.horizontalVector.x + player.additionalVector.x > player.maxAirMovementSpeed) //Limits air movement speed
+            if (player.horizontalVector.x + player.additionalVector.x > player.maxAirMovementSpeed && !fromRedirection) //Limits air movement speed
             {
                 float total = player.horizontalVector.x + player.additionalVector.x; 
                 float excess = total - player.maxAirMovementSpeed;
@@ -439,7 +445,10 @@ public class PlayerMovement : MonoBehaviour
                         timeSinceRelease += Time.deltaTime;
                         if (timeSinceRelease > player.releaseTime) {
                             if (player.additionalVector.y > 0) player.additionalVector.y = 0;
-                            player.playerState = new FallingState(player);
+                            FallingState state = new FallingState(player);
+                            state.FromRedirection();
+                            player.playerState = state;
+                            
                         }
                         break;
                     }
@@ -1426,7 +1435,11 @@ public class PlayerMovement : MonoBehaviour
 
 //TODO 
 /*
-Configure player movement parameters even more
+Make prefabs out of all the needed elements including the obsctale blocks and the core level components
+Build the levels
+Get screenshots of all the levels for the level images
 
 UI:
+Create main menu UI stylised and not the basic one
+Make the game UI stylised and not the basic one
 */
