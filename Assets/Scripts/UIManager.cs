@@ -53,4 +53,9 @@ public class UIManager : MonoBehaviour
         SceneManager.LoadSceneAsync(0);
     }
 
+    public void NextLevel()
+    {
+        SceneManager.LoadSceneAsync(LevelManager.Instance.GetNextLevel()+1);
+    }
+
 }

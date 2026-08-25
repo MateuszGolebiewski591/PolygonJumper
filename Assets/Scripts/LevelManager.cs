@@ -41,4 +41,9 @@ public class LevelManager : MonoBehaviour
                 }
         }
     }
+
+    public int GetNextLevel()
+    {
+        return (levelData.levelIndex + 1) % globalPlayerState.levelsUnlocked.Length;
+    }
 }

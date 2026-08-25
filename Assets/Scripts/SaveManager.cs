@@ -67,12 +67,4 @@ public class SaveManager : MonoBehaviour
         return false;
         
     }
-    public void DeleteSave()
-    {
-        
-    }
-    public bool HasSave()
-    {
-        return false;
-    }
 }
