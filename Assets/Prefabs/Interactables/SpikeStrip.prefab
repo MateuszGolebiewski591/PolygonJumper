@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 7330820995822188869}
   - component: {fileID: 5686129972458592668}
   - component: {fileID: 7229897788740022949}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: SpikeStrip
   m_TagString: Untagged
   m_Icon: {fileID: 0}

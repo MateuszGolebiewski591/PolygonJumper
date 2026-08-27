@@ -274,7 +274,7 @@ GameObject:
   - component: {fileID: 4004072329197515196}
   - component: {fileID: 893067203951144363}
   - component: {fileID: 5852409441665196266}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: SpikedDecagon
   m_TagString: Untagged
   m_Icon: {fileID: 0}

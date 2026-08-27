@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 4405010437484038761}
   - component: {fileID: 788212731146060232}
   - component: {fileID: 4691252744713469604}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Septagon
   m_TagString: Untagged
   m_Icon: {fileID: 0}

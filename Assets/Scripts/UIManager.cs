@@ -37,6 +37,7 @@ public class UIManager : MonoBehaviour
             case EventType.LevelComplete :
                 {
                     LevelCompleteMenu.SetActive(true);
+                    AudioManager.Instance.PlayLevelCompleteSound();
                     break;
                 }
         }

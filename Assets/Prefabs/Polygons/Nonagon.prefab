@@ -185,7 +185,7 @@ GameObject:
   - component: {fileID: 4024928486782083199}
   - component: {fileID: 1142829012858017393}
   - component: {fileID: 5334368509524596226}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Nonagon
   m_TagString: Untagged
   m_Icon: {fileID: 0}

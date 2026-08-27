@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 6590778003597526710}
   - component: {fileID: 6276116414342005787}
   - component: {fileID: 568182846463244085}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: SpikedSquare
   m_TagString: Untagged
   m_Icon: {fileID: 0}

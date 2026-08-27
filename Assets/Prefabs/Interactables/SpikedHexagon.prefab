@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 6927070065742830146}
   - component: {fileID: 6679824605826531508}
   - component: {fileID: 1681698506242742915}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: SpikedHexagon
   m_TagString: Untagged
   m_Icon: {fileID: 0}

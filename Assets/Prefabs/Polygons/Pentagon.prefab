@@ -97,7 +97,7 @@ GameObject:
   - component: {fileID: 5632747218868213096}
   - component: {fileID: 2465719002939355469}
   - component: {fileID: 5044015405874468820}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Pentagon
   m_TagString: Untagged
   m_Icon: {fileID: 0}

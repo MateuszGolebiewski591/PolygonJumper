@@ -273,7 +273,7 @@ GameObject:
   - component: {fileID: 653061274465053692}
   - component: {fileID: 3948166710195166585}
   - component: {fileID: 7760437561174824985}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: SpikedNonagon
   m_TagString: Untagged
   m_Icon: {fileID: 0}

@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 4311610650281085154}
   - component: {fileID: 6612638851383340112}
   - component: {fileID: 1170824258378304520}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: SpikedPentagon
   m_TagString: Untagged
   m_Icon: {fileID: 0}

@@ -6,7 +6,7 @@ using System.Collections.Generic;
 public class PlayerMovement : MonoBehaviour
 {
     private Rigidbody2D rb;
-    private PolygonCollider2D collider;
+    private PolygonCollider2D playerCollider;
 
     [Header("Layers")]
     [SerializeField] private LayerMask groundLayer;
@@ -49,7 +49,7 @@ public class PlayerMovement : MonoBehaviour
     private bool doubleJumpAvailable = false;
 
 
-    [Header("Dash Parameters")]
+    [Header("Dash Parameters")] 
     [SerializeField] private float airDashTime = 0.2f;
     [SerializeField] private AnimationCurve airDashCurve;
     private bool airDashAvailable = false;
@@ -61,7 +61,6 @@ public class PlayerMovement : MonoBehaviour
 
 
     [Header("Movement Tech Tracking")]
-    private bool jumpUsed = true;
     private bool airDashUsed = true;
     private bool doubleJumpUsed = true;
     private bool hasAirDash;
@@ -71,7 +70,6 @@ public class PlayerMovement : MonoBehaviour
 
     [Header("Edge Detection")]
     [SerializeField] private float edgeThickness = 0.1f;
-    [SerializeField] private float groundCheckDistance = 0.1f;
     private PolygonCollider2D currentSurface; 
     private Vector2 contactPoint;
 
@@ -121,7 +119,7 @@ public class PlayerMovement : MonoBehaviour
 
     private class FallingState : PlayerState
     {
-        public PlayerStateNum state = PlayerStateNum.Falling;
+        new public PlayerStateNum state = PlayerStateNum.Falling;
         PlayerMovement player;
         private float elapsedFallTime = 0;
         private float maxFallTime;
@@ -200,7 +198,7 @@ public class PlayerMovement : MonoBehaviour
 
     private class JumpingState : PlayerState
     {
-        public PlayerStateNum state = PlayerStateNum.Jumping;
+        new public PlayerStateNum state = PlayerStateNum.Jumping;
         PlayerMovement player;
         bool airborne = false;
         private float elapsedJumpTime = 0;
@@ -218,9 +216,9 @@ public class PlayerMovement : MonoBehaviour
             player.airDashAvailable = false;
             player.state = state; 
             player.doubleJumpAvailable = false;
-            player.jumpUsed = true;
             player.additionalVector = -player.gravity * player.jumpForce;
             player.verticalVector = Vector2.zero;
+            AudioManager.Instance.PlayJumpSound();
         }
         override public void CheckConditions()
         {
@@ -287,7 +285,7 @@ public class PlayerMovement : MonoBehaviour
 
     private class DoubleJumpState : PlayerState
     {
-        public PlayerStateNum state = PlayerStateNum.DoubleJump;
+        new public PlayerStateNum state = PlayerStateNum.DoubleJump;
         PlayerMovement player;
         private float timeElapsedSinceJump = 0;
         private float doubleJumpTime;
@@ -300,6 +298,7 @@ public class PlayerMovement : MonoBehaviour
             player.airDashAvailable = true;
             doubleJumpTime = player.maxDoubleJumpTime;
             player.doubleJumpUsed = true;
+            AudioManager.Instance.PlayJumpSound();
         }
 
         public override void CheckConditions()
@@ -328,7 +327,7 @@ public class PlayerMovement : MonoBehaviour
 
     private class AirDashState : PlayerState
     {
-        public PlayerStateNum state = PlayerStateNum.AirDash;
+        new public PlayerStateNum state = PlayerStateNum.AirDash;
         PlayerMovement player;
         private float airDashTime;
         private float elapsedAirDashTime = 0;
@@ -350,6 +349,7 @@ public class PlayerMovement : MonoBehaviour
             if (!jumpButtonInitiallyPressed) player.doubleJumpAvailable = true;
             else player.doubleJumpAvailable = false;
             player.airDashUsed = true;
+            AudioManager.Instance.PlayDashSound();
         }
 
         override public void CheckConditions()
@@ -379,7 +379,7 @@ public class PlayerMovement : MonoBehaviour
 
     private class RedirectionState : PlayerState
     {
-        public PlayerStateNum state = PlayerStateNum.Redirection;
+        new public PlayerStateNum state = PlayerStateNum.Redirection;
         PlayerMovement player;
         private Stage stage = Stage.correction;
         private Vector2 preservedMotion;
@@ -426,6 +426,7 @@ public class PlayerMovement : MonoBehaviour
                             stage = Stage.player;
                             player.transform.position = player.redirectPad.transform.position;
                             player.cameraAnchor.CenterAnchor();
+                            AudioManager.Instance.StartPowerSound();
                         }
                         break;
                     }
@@ -437,6 +438,8 @@ public class PlayerMovement : MonoBehaviour
                             stage = Stage.ejection;
                             player.redirectPad.UnloadPad();
                             player.redirectPad = null;
+                            AudioManager.Instance.PlayDischargeSound();
+                            AudioManager.Instance.EndPowerSound();
                         }
                         break;
                     }
@@ -493,7 +496,7 @@ public class PlayerMovement : MonoBehaviour
 
     private class CompletionState : PlayerState
     {
-        public PlayerStateNum state = PlayerStateNum.Completion;
+        new public PlayerStateNum state = PlayerStateNum.Completion;
         PlayerMovement player;
         private float elapsedCorrectionTime = 0;
         private Vector3 initialPlayerPosition;
@@ -507,6 +510,7 @@ public class PlayerMovement : MonoBehaviour
             player.horizontalVector = Vector2.zero;
             player.verticalVector = Vector2.zero;
             player.additionalVector = Vector2.zero;
+            AudioManager.Instance.PlayPortalSound();
         }
 
         override public void CheckConditions()
@@ -525,7 +529,7 @@ public class PlayerMovement : MonoBehaviour
 
     private class GroundedState : PlayerState
     {
-        public PlayerStateNum state = PlayerStateNum.Grounded;
+        new public PlayerStateNum state = PlayerStateNum.Grounded;
         PlayerMovement player;
         private bool waitingOnJumpUp;
         private int localFaceIndex;
@@ -551,7 +555,6 @@ public class PlayerMovement : MonoBehaviour
             }
             player.airDashAvailable = true;
             player.doubleJumpAvailable = false;
-            player.jumpUsed = false;
             player.airDashUsed = false;
             player.doubleJumpUsed = false;
             player.IsOnSurface();
@@ -567,9 +570,9 @@ public class PlayerMovement : MonoBehaviour
                 player.playerState = new CompletionState(player);
                 return;
             }
-            Vector2[] points = player.collider.points;
-            Vector2 a = player.collider.transform.TransformPoint(points[localFaceIndex]);
-            Vector2 b = player.collider.transform.TransformPoint(points[(localFaceIndex + 1) % points.Length]);
+            Vector2[] points = player.playerCollider.points;
+            Vector2 a = player.playerCollider.transform.TransformPoint(points[localFaceIndex]);
+            Vector2 b = player.playerCollider.transform.TransformPoint(points[(localFaceIndex + 1) % points.Length]);
             Vector2 edge = b - a;
             Vector2 currentNormal = new Vector2(-edge.y, edge.x).normalized;
             Vector2 midpoint = (a + b) / 2f;
@@ -658,9 +661,9 @@ public class PlayerMovement : MonoBehaviour
             {
                 player.verticalVector = Vector2.zero;
                 player.horizontalVector = Vector2.zero;
-                Vector2[] points = player.collider.points;
-                Vector2 a = player.collider.transform.TransformPoint(points[localFaceIndex]);
-                Vector2 b = player.collider.transform.TransformPoint(points[(localFaceIndex + 1) % points.Length]);
+                Vector2[] points = player.playerCollider.points;
+                Vector2 a = player.playerCollider.transform.TransformPoint(points[localFaceIndex]);
+                Vector2 b = player.playerCollider.transform.TransformPoint(points[(localFaceIndex + 1) % points.Length]);
                 Vector2 edge = b - a;
                 Vector2 currentNormal = new Vector2(-edge.y, edge.x).normalized;
                 Vector2 midpoint = (a + b) / 2f;
@@ -737,7 +740,7 @@ public class PlayerMovement : MonoBehaviour
 
     private class StickingState : PlayerState
     {
-        public PlayerStateNum state = PlayerStateNum.Sticking;
+        new public PlayerStateNum state = PlayerStateNum.Sticking;
         private PlayerMovement player;
         private PolygonCollider2D targetHitbox;
         private Vector2 targetNormal;
@@ -756,7 +759,6 @@ public class PlayerMovement : MonoBehaviour
             player.doubleJumpAvailable = false;
             player.airDashUsed = true;
             player.doubleJumpUsed = true;
-            player.jumpUsed = true;
 
             ResolveStickingPrerequisites(player.currentSurface, player.contactPoint);
             player.state = state;
@@ -772,9 +774,9 @@ public class PlayerMovement : MonoBehaviour
                 player.playerState = new CompletionState(player);
                 return;
             }
-            Vector2[] points = player.collider.points;
-            Vector2 a = player.collider.transform.TransformPoint(points[localFaceIndex]);
-            Vector2 b = player.collider.transform.TransformPoint(points[(localFaceIndex + 1) % points.Length]);
+            Vector2[] points = player.playerCollider.points;
+            Vector2 a = player.playerCollider.transform.TransformPoint(points[localFaceIndex]);
+            Vector2 b = player.playerCollider.transform.TransformPoint(points[(localFaceIndex + 1) % points.Length]);
             Vector2 edge = b - a;
             Vector2 currentNormal = new Vector2(-edge.y, edge.x).normalized;
             Vector2 midpoint = (a + b) / 2f;
@@ -783,9 +785,9 @@ public class PlayerMovement : MonoBehaviour
         }
         override public void UpdatePlayer() 
         {
-            Vector2[] points = player.collider.points;
-            Vector2 a = player.collider.transform.TransformPoint(points[localFaceIndex]);
-            Vector2 b = player.collider.transform.TransformPoint(points[(localFaceIndex + 1) % points.Length]);
+            Vector2[] points = player.playerCollider.points;
+            Vector2 a = player.playerCollider.transform.TransformPoint(points[localFaceIndex]);
+            Vector2 b = player.playerCollider.transform.TransformPoint(points[(localFaceIndex + 1) % points.Length]);
             Vector2 edge = b - a;
             Vector2 currentNormal = new Vector2(-edge.y, edge.x).normalized;
             Vector2 midpoint = (a + b) / 2f;
@@ -808,7 +810,6 @@ public class PlayerMovement : MonoBehaviour
             bool surfaceCorner = ResolveTargetFace(surfaceHitbox, contactPoint, out closestCornerIndex); //Have we hit object corner/which face to stick to
             int cornerIndex;//with which corner we hit
             bool triangleCorner = ResolveTriangleContactType(contactPoint, out cornerIndex); //did triangle hit with corner or with face
-            int triangleFaceIndex;
             if (!triangleCorner) { //If hit with face, identify index of face
                 localFaceIndex = ResolveTriangleContact(contactPoint);
                 int looseCornerIndex = -1;
@@ -817,10 +818,10 @@ public class PlayerMovement : MonoBehaviour
             else
             {
                 //get adjacent corners on triangle, compute outward vectors, dot product with target vector, take highest raw value
-                Vector2[] trianglePoints = player.collider.points; 
-                Vector2 trianglePrevPoint = player.collider.transform.TransformPoint(trianglePoints[(cornerIndex - 1 + trianglePoints.Length) % trianglePoints.Length]);
-                Vector2 triangleCurrentPoint = player.collider.transform.TransformPoint(trianglePoints[cornerIndex]);
-                Vector2 triangleNextPoint = player.collider.transform.TransformPoint(trianglePoints[(cornerIndex + 1) % trianglePoints.Length]);
+                Vector2[] trianglePoints = player.playerCollider.points; 
+                Vector2 trianglePrevPoint = player.playerCollider.transform.TransformPoint(trianglePoints[(cornerIndex - 1 + trianglePoints.Length) % trianglePoints.Length]);
+                Vector2 triangleCurrentPoint = player.playerCollider.transform.TransformPoint(trianglePoints[cornerIndex]);
+                Vector2 triangleNextPoint = player.playerCollider.transform.TransformPoint(trianglePoints[(cornerIndex + 1) % trianglePoints.Length]);
                 Vector2 trianglePrevFace = trianglePrevPoint - triangleCurrentPoint; //outward vectors for triangle stemming from corner which we hit with
                 Vector2 triangleNextFace = triangleNextPoint - triangleCurrentPoint;
                 if (surfaceCorner) //corner - corner
@@ -916,7 +917,7 @@ public class PlayerMovement : MonoBehaviour
         {
             int closestPointIndex = ResolveCornerIndex(surfaceHitbox, contactPoint); //Finds index of corner
             Vector2[] cornerNormals = FindCornerNormals(surfaceHitbox, closestPointIndex); //Find normals of two sides that make up the corner
-            Vector2[] trianglePoints = player.collider.points;
+            Vector2[] trianglePoints = player.playerCollider.points;
             Vector2 triangleCenter = ((trianglePoints[0] + trianglePoints[1] + trianglePoints[2])/3).normalized; //Center of triangle
             Vector2 centerOffset = triangleCenter - surfaceHitbox.points[closestPointIndex]; //Vector from corner to triangle center
             float prevSimilarity = Vector2.Dot(centerOffset, cornerNormals[0]); //Compare against both normals
@@ -976,11 +977,11 @@ public class PlayerMovement : MonoBehaviour
         private bool ResolveTriangleContactType(Vector2 contactPoint, out int cornerIndex) //have we hit a corner or not, if so which corner (index)
         {
             cornerIndex = -1;
-            Vector2[] points = player.collider.points;
+            Vector2[] points = player.playerCollider.points;
             float cornerTolerance = 0.2f;
             for (int i = 0; i < points.Length; i++)
             {
-                Vector2 worldPoint = player.collider.transform.TransformPoint(points[i]);
+                Vector2 worldPoint = player.playerCollider.transform.TransformPoint(points[i]);
                 float distance = Vector2.Distance(contactPoint, worldPoint); //Finds which corner is closest to the reported contact point
                 if (distance <= cornerTolerance) //if close enough, we know it's that one, we save the index and return true
                 {
@@ -994,12 +995,12 @@ public class PlayerMovement : MonoBehaviour
         private int ResolveTriangleContact(Vector2 contactPoint) 
         {
             int faceIndex = -1;
-            Vector2[] points = player.collider.points;
+            Vector2[] points = player.playerCollider.points;
             float bestDistance = float.MaxValue;
             for (int i = 0; i < points.Length; i++)
             {
-                Vector2 a = player.collider.transform.TransformPoint(points[i]); //retrieve edge
-                Vector2 b = player.collider.transform.TransformPoint(points[(i + 1) % points.Length]);
+                Vector2 a = player.playerCollider.transform.TransformPoint(points[i]); //retrieve edge
+                Vector2 b = player.playerCollider.transform.TransformPoint(points[(i + 1) % points.Length]);
                 Vector2 closest = ClosestPointOnSegment(contactPoint, a, b); //get closest point
                 float distance = Vector2.Distance(contactPoint, closest); //check how far contact point is from closest point (hardly any difference if on line)
                 if (distance < bestDistance) //take closest match, which should have a very small distance since it's the same point
@@ -1046,9 +1047,9 @@ public class PlayerMovement : MonoBehaviour
 
         private void StabilizeTargetFace(int closestCornerIndex)
         {
-            Vector2[] triPoints = player.collider.points;
-            Vector2 faceA = player.collider.transform.TransformPoint(triPoints[localFaceIndex]);
-            Vector2 faceB = player.collider.transform.TransformPoint(triPoints[(localFaceIndex + 1) % triPoints.Length]);
+            Vector2[] triPoints = player.playerCollider.points;
+            Vector2 faceA = player.playerCollider.transform.TransformPoint(triPoints[localFaceIndex]);
+            Vector2 faceB = player.playerCollider.transform.TransformPoint(triPoints[(localFaceIndex + 1) % triPoints.Length]);
             Vector2 edge = faceB - faceA;
             Vector2 currentNormal = new Vector2(-edge.y, edge.x).normalized;
             Vector2 faceMidpoint = (faceA + faceB) * 0.5f;
@@ -1158,7 +1159,7 @@ public class PlayerMovement : MonoBehaviour
     void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
-        collider = GetComponent<PolygonCollider2D>();
+        playerCollider = GetComponent<PolygonCollider2D>();
         shineMaterial = GetComponentInChildren<SpriteRenderer>().material;
         movementSpeed = groundMovementSpeed;
         playerState = new FallingState(this);
@@ -1199,6 +1200,7 @@ public class PlayerMovement : MonoBehaviour
                 {
                     sprite.enabled = false;
                     overrideMovement = true;
+                    AudioManager.Instance.PlayDeathSound();
                     break;
                 }
             case EventType.LevelReset :
@@ -1269,7 +1271,7 @@ public class PlayerMovement : MonoBehaviour
 
     private bool IsOnSurface()
     {
-        Vector2[] colliderPoints = collider.points;
+        Vector2[] colliderPoints = playerCollider.points;
         float closestSide = float.MaxValue;
         bool foundSurface = false;
 

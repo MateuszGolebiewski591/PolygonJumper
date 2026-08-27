@@ -186,7 +186,7 @@ GameObject:
   - component: {fileID: 1336441578516694183}
   - component: {fileID: 5200483829025607245}
   - component: {fileID: 8362841859767112582}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: SpikedSeptagon
   m_TagString: Untagged
   m_Icon: {fileID: 0}

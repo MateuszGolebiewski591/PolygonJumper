@@ -4,11 +4,11 @@ public class LevelComplete : MonoBehaviour
 {
     [SerializeField] private GameEvent gameEventChannel;
     [SerializeField] private GlobalPlayerState globalPlayerState;
-    private BoxCollider2D collider;
+    private BoxCollider2D portalCollider;
 
     void Awake()
     {
-        collider = GetComponent<BoxCollider2D>();
+        portalCollider = GetComponent<BoxCollider2D>();
     }
 
     void OnTriggerEnter2D(Collider2D other)

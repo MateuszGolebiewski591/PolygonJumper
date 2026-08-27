@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 8780488636279158017}
   - component: {fileID: 4417625998710105417}
   - component: {fileID: 2174527744793705039}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Decagon
   m_TagString: Untagged
   m_Icon: {fileID: 0}

@@ -273,7 +273,7 @@ GameObject:
   - component: {fileID: 2148464379614712755}
   - component: {fileID: 6200903370406739640}
   - component: {fileID: 7912920834909343697}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: SpikedOctagon
   m_TagString: Untagged
   m_Icon: {fileID: 0}

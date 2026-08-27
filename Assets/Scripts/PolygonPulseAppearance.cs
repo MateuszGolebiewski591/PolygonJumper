@@ -16,7 +16,6 @@ public class PolygonPulseAppearance : MonoBehaviour
     {
         meshRenderer = GetComponent<MeshRenderer>();
         propertyBlock = new MaterialPropertyBlock();
-        color = color;
         ApplyColours();
         meshRenderer.enabled = false;
     }
@@ -48,6 +47,7 @@ public class PolygonPulseAppearance : MonoBehaviour
     public void Pulse()
     {
         StartCoroutine(PlayPulse());
+        AudioManager.Instance.PlayPulseSound();
     }
 
     public IEnumerator PlayPulse()
