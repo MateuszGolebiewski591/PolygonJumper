@@ -688,7 +688,7 @@ public class PlayerMovement : MonoBehaviour
                 }
                 else currentTravelVector = Vector2.zero;
                 lastInputVector = player.inputVector;
-                player.horizontalVector = player.movementSpeed * Vector2.Dot(player.groundSurface, currentTravelVector) * player.groundSurface;
+                player.horizontalVector = player.movementSpeed * (Vector2.Dot(player.groundSurface, currentTravelVector) * player.groundSurface).normalized;
             } 
         }
 
@@ -1244,6 +1244,7 @@ public class PlayerMovement : MonoBehaviour
 
     private void ResetPlayer()
     {
+        Time.timeScale = 1f;
         sprite.enabled = true;
         overrideMovement = false;
         airDashAvailable = false;
