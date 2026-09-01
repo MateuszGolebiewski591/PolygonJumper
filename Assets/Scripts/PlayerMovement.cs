@@ -191,8 +191,8 @@ public class PlayerMovement : MonoBehaviour
                 float excess = total + player.maxAirMovementSpeed;
                 player.horizontalVector.x -= excess;
             }
-            if (player.rollLeftButtonDown) player.transform.Rotate(0f, 0f, -player.rotationSpeed*Time.deltaTime);
-            if (player.rollRightButtonDown) player.transform.Rotate(0f, 0f, player.rotationSpeed*Time.deltaTime);
+            if (player.rollLeftButtonDown && player.hasRotation) player.transform.Rotate(0f, 0f, -player.rotationSpeed*Time.deltaTime);
+            if (player.rollRightButtonDown && player.hasRotation) player.transform.Rotate(0f, 0f, player.rotationSpeed*Time.deltaTime);
         }
     }
 
@@ -277,8 +277,8 @@ public class PlayerMovement : MonoBehaviour
             }
             if (airborne) //Air roll
             {
-                if (player.rollLeftButtonDown) player.transform.Rotate(0f, 0f, -player.rotationSpeed*Time.deltaTime);
-                if (player.rollRightButtonDown) player.transform.Rotate(0f, 0f, player.rotationSpeed*Time.deltaTime);
+                if (player.rollLeftButtonDown && player.hasRotation) player.transform.Rotate(0f, 0f, -player.rotationSpeed*Time.deltaTime);
+                if (player.rollRightButtonDown && player.hasRotation) player.transform.Rotate(0f, 0f, player.rotationSpeed*Time.deltaTime);
             }
         }
     } 
@@ -320,8 +320,8 @@ public class PlayerMovement : MonoBehaviour
             player.horizontalVector = player.movementSpeed * Vector2.Dot(player.inputVector, Vector2.left) * Vector2.left;
             if (Vector2.Dot(player.inputVector, player.additionalVector) < 0) player.additionalVector = Vector2.zero;
             player.verticalVector = Vector2.up * player.gravityForce * 1.5f * player.doubleJumpCurve.Evaluate(timeElapsedSinceJump/doubleJumpTime);
-            if (player.rollLeftButtonDown) player.transform.Rotate(0f, 0f, -player.rotationSpeed*Time.deltaTime);
-            if (player.rollRightButtonDown) player.transform.Rotate(0f, 0f, player.rotationSpeed*Time.deltaTime);
+            if (player.rollLeftButtonDown && player.hasRotation) player.transform.Rotate(0f, 0f, -player.rotationSpeed*Time.deltaTime);
+            if (player.rollRightButtonDown && player.hasRotation) player.transform.Rotate(0f, 0f, player.rotationSpeed*Time.deltaTime);
         }
     }
 
@@ -372,8 +372,8 @@ public class PlayerMovement : MonoBehaviour
             if (Vector2.Dot(player.inputVector, airDashDirection) < 0 && elapsedAirDashTime < 0.8f * airDashTime) elapsedAirDashTime = 0.8f * airDashTime;
             float dashSpeed = player.airDashCurve.Evaluate(elapsedAirDashTime/airDashTime);
             player.horizontalVector = airDashDirection * dashSpeed * 3f * player.movementSpeed; 
-            if (player.rollLeftButtonDown) player.transform.Rotate(0f, 0f, -player.rotationSpeed*Time.deltaTime);
-            if (player.rollRightButtonDown) player.transform.Rotate(0f, 0f, player.rotationSpeed*Time.deltaTime);
+            if (player.rollLeftButtonDown && player.hasRotation) player.transform.Rotate(0f, 0f, -player.rotationSpeed*Time.deltaTime);
+            if (player.rollRightButtonDown && player.hasRotation) player.transform.Rotate(0f, 0f, player.rotationSpeed*Time.deltaTime);
         }
     }
 
