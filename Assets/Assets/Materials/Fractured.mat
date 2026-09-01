@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!114 &-677780141433750507
+--- !u!114 &-1641987859177331357
 MonoBehaviour:
   m_ObjectHideFlags: 11
   m_CorrespondingSourceObject: {fileID: 0}
@@ -20,15 +20,15 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: StaggerPattern
-  m_Shader: {fileID: -6465566751694194690, guid: 021001d84e7ff5a40bf6a233586a7863, type: 3}
+  m_Name: Fractured
+  m_Shader: {fileID: -6465566751694194690, guid: 3ed8ab1e91c58334b859167127f83bcc, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
   m_InvalidKeywords: []
-  m_LightmapFlags: 2
+  m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
-  m_DoubleSidedGI: 1
+  m_DoubleSidedGI: 0
   m_CustomRenderQueue: -1
   stringTagMap: {}
   disabledShaderPasses:
@@ -67,25 +67,16 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _Cutoff1: 0.75
-    - _Cutoff2: 0.82
     - _EnableExternalAlpha: 0
-    - _InsetRadius: 0.35
-    - _InsetRadius2: 0.29
-    - _InsetRadius3: 0.24
-    - _InsetScale: 0.6
-    - _PolygonRadius: 2.36
-    - _PolygonRotation: 0
     - _QueueControl: 0
     - _QueueOffset: 0
-    - _Sides: 5
     - _ZWrite: 0
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
-    - _Inner1: {r: 0.6521893, g: 0.6909555, b: 0.9056604, a: 1}
-    - _Inner2: {r: 0, g: 0.38652754, b: 1, a: 1}
-    - _Inner3: {r: 1, g: 1, b: 1, a: 1}
-    - _Outer: {r: 0.2784314, g: 0.3108462, b: 0.96862745, a: 1}
+    - _Inner1: {r: 0.07762726, g: 0.98742133, b: 0.30507576, a: 1}
+    - _Inner2: {r: 0.01572317, g: 1, b: 0.24461547, a: 1}
+    - _Inner3: {r: 1, g: 0, b: 0.81694317, a: 1}
+    - _Outer: {r: 1, g: 0, b: 0.585227, a: 1}
     - _RendererColor: {r: 1, g: 1, b: 1, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

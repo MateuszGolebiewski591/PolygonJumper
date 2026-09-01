@@ -12,6 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: efefcaf250d19ae42bf4b27cffadba23, type: 3}
   m_Name: Prototype
   m_EditorClassIdentifier: Assembly-CSharp::LevelData
-  levelIndex: 0
+  levelIndex: 15
   sceneName: PrototypeScene
-  displayName: empty
+  displayName: Prototype

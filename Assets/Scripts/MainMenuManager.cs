@@ -12,11 +12,10 @@ public class MainMenuManager : MonoBehaviour
         foreach (LevelData data in levelData)
         {
             if (data.sceneName == levelName)
-            {    
+            {   
                 if (globalPlayerState.levelsUnlocked[data.levelIndex]) SceneManager.LoadSceneAsync(levelName);
             }
         }
-        
     }
 
     public void QuitGame()
