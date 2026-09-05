@@ -1438,11 +1438,12 @@ public class PlayerMovement : MonoBehaviour
 
 //TODO 
 /*
-Make prefabs out of all the needed elements including the obsctale blocks and the core level components
 Build the levels
 Get screenshots of all the levels for the level images
+Fix player infinite death bug when dying by moving obstacle
+Add jump vfx
+Increase player visibility
 
 UI:
 Create main menu UI stylised and not the basic one
-Make the game UI stylised and not the basic one
 */

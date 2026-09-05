@@ -137,7 +137,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6f3564430d74d6549b511c000b854aaf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: '::'
-  movementSpeed: 5
+  movementSpeed: 10
   pointsFolder: {fileID: 5864222593832453246}
   platform: {fileID: 1860131671676310967}
   gameEventChannel: {fileID: 11400000, guid: f8ca9f533a997484483f6d73c85b077b, type: 2}
