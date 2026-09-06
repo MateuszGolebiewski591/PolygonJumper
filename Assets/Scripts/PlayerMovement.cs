@@ -93,6 +93,7 @@ public class PlayerMovement : MonoBehaviour
     private bool inputsAllowed = true;
     private Vector2 cameraInputVector = Vector2.zero;
     private bool levelCompleted = false;
+    private bool hasDied = false;
 
     private PlayerStateNum state = PlayerStateNum.Falling;
     private PlayerState playerState;
@@ -1198,9 +1199,13 @@ public class PlayerMovement : MonoBehaviour
         {
             case EventType.PlayerDeath : 
                 {
-                    sprite.enabled = false;
-                    overrideMovement = true;
-                    AudioManager.Instance.PlayDeathSound();
+                    if (!hasDied)
+                    {
+                        sprite.enabled = false;
+                        overrideMovement = true;
+                        AudioManager.Instance.PlayDeathSound();
+                        hasDied = true;
+                    }
                     break;
                 }
             case EventType.LevelReset :
@@ -1266,6 +1271,7 @@ public class PlayerMovement : MonoBehaviour
         hasAirDash = globalPlayerState.hasAirDash;
         hasDoubleJump = globalPlayerState.hasDoubleJump;
         hasRotation = globalPlayerState.hasRotation;
+        hasDied = false;
         playerState = new FallingState(this);   
     }
 
@@ -1440,9 +1446,8 @@ public class PlayerMovement : MonoBehaviour
 /*
 Build the levels
 Get screenshots of all the levels for the level images
-Fix player infinite death bug when dying by moving obstacle
 Add jump vfx
-Increase player visibility
+Add dash afterimage vfx
 
 UI:
 Create main menu UI stylised and not the basic one

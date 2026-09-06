@@ -7,6 +7,7 @@ public class DeathParticleSystem : MonoBehaviour
     [SerializeField] private ParticleSystem smallDeathParticles;
     [SerializeField] private GameEvent gameEventChannel;
     [SerializeField] private Transform player;
+    private bool hasDied = false;
     
     void OnEnable()
     {
@@ -41,9 +42,18 @@ public class DeathParticleSystem : MonoBehaviour
         {
             case EventType.PlayerDeath :
                 {
-                    transform.position = player.position;
-                    smallDeathParticles.transform.position = player.position;
-                    PlayDeath();
+                    if (!hasDied)
+                    {
+                        transform.position = player.position;
+                        smallDeathParticles.transform.position = player.position;
+                        PlayDeath();
+                        hasDied = true;
+                    }
+                    break;
+                }
+            case EventType.LevelReset :
+                {
+                    hasDied = false;
                     break;
                 }
         }

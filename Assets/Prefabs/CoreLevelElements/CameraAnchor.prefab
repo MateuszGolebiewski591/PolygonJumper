@@ -48,6 +48,6 @@ MonoBehaviour:
   maxY: 3
   gameEvent: {fileID: 11400000, guid: f8ca9f533a997484483f6d73c85b077b, type: 2}
   globalPlayerState: {fileID: 11400000, guid: 881ecec8cc90d73438e561a6d869d1bf, type: 2}
-  cameraOffsetAmount: 3
+  cameraOffsetAmount: 5
   timeBeforeAnchorReset: 0.75
   centerSpeed: 0.5
