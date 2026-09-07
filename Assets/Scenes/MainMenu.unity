@@ -240,7 +240,6 @@ MonoBehaviour:
   levelPanel: {fileID: 1555721485}
   globalPlayerState: {fileID: 11400000, guid: 881ecec8cc90d73438e561a6d869d1bf, type: 2}
   levelData:
-  - {fileID: 11400000, guid: f1e448f0b4254904ab99e67e2bd5ba79, type: 2}
   - {fileID: 11400000, guid: 756042f07a85e4545b05d982eaa2aee1, type: 2}
   - {fileID: 11400000, guid: f7861d27ae2de7f4aa5a0d6bbe0af60b, type: 2}
   - {fileID: 11400000, guid: 7c10684c37ce72d4a85808c714ecae0d, type: 2}
@@ -255,6 +254,8 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 3e76c7e1b7515844182169287f0ea1ba, type: 2}
   - {fileID: 11400000, guid: 5e0552090d1fa1e43830dcc50ba09339, type: 2}
   - {fileID: 11400000, guid: b558cf1ed40deb6419b532a20f162116, type: 2}
+  - {fileID: 11400000, guid: 63b6ccabb0cb923419dbe00aa4388c7c, type: 2}
+  - {fileID: 11400000, guid: 7bcd3cfbb0fab3b4e859c5a07b4d7268, type: 2}
 --- !u!1 &37002044
 GameObject:
   m_ObjectHideFlags: 0
