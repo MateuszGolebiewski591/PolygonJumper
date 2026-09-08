@@ -56,12 +56,22 @@ public class SaveManager : MonoBehaviour
     {
         if (File.Exists(path))
         {
-            string json = File.ReadAllText(path);
-            SaveData save = JsonUtility.FromJson<SaveData>(json);
-            globalPlayerState.hasAirDash=save.hasAirDash;
-            globalPlayerState.hasDoubleJump=save.hasDoubleJump;
-            globalPlayerState.hasRotation=save.hasRotation;
-            globalPlayerState.levelsUnlocked = save.levelsUnlocked;
+            SaveData save;
+            try
+            {
+                string json = File.ReadAllText(path);
+                save = JsonUtility.FromJson<SaveData>(json);   
+                globalPlayerState.hasAirDash=save.hasAirDash;
+                globalPlayerState.hasDoubleJump=save.hasDoubleJump;
+                globalPlayerState.hasRotation=save.hasRotation;
+                globalPlayerState.levelsUnlocked = save.levelsUnlocked;
+            }
+            catch
+            {
+                return false;
+            }
+            if (save == null) return false;
+            if (save.levelsUnlocked == null) return false;
             return true;
         }
         return false;

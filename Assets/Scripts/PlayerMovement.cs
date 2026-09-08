@@ -1444,11 +1444,7 @@ public class PlayerMovement : MonoBehaviour
 
 //TODO 
 /*
-Build the levels
-Get screenshots of all the levels for the level images
 Add jump vfx
 Add dash afterimage vfx
 
-UI:
-Create main menu UI stylised and not the basic one
 */
