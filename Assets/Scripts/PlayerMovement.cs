@@ -52,6 +52,7 @@ public class PlayerMovement : MonoBehaviour
     [Header("Dash Parameters")] 
     [SerializeField] private float airDashTime = 0.2f;
     [SerializeField] private AnimationCurve airDashCurve;
+    [SerializeField] private DashAfterimage dashAfterimage;
     private bool airDashAvailable = false;
     private bool airDashButtonDown = false;
 
@@ -351,6 +352,7 @@ public class PlayerMovement : MonoBehaviour
             else player.doubleJumpAvailable = false;
             player.airDashUsed = true;
             AudioManager.Instance.PlayDashSound();
+            player.dashAfterimage.StartDashEffect(player.airDashTime);
         }
 
         override public void CheckConditions()
