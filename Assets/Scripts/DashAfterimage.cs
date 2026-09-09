@@ -13,6 +13,31 @@ public class DashAfterimage : MonoBehaviour
         StartCoroutine(DashEffect(dashTime));
     }
 
+    public void StartRedirectionEffect(float time)
+    {
+        StartCoroutine(RedirectionDashEffect(time));
+    }
+
+    private IEnumerator RedirectionDashEffect(float dashTime)
+    {
+        float timeElapsed = 0f;
+        while (timeElapsed < dashTime/4f) {
+            timeElapsed += Time.deltaTime;
+            yield return null;
+        }
+        StartCoroutine(LeaveImage(image1, dashTime));
+        while (timeElapsed < dashTime/2f) {
+            timeElapsed += Time.deltaTime;
+            yield return null;
+        }
+        StartCoroutine(LeaveImage(image2, dashTime));
+        while (timeElapsed < 3*dashTime/4f) {
+            timeElapsed += Time.deltaTime;
+            yield return null;
+        }
+        StartCoroutine(LeaveImage(image3, dashTime));
+    }
+
     private IEnumerator DashEffect(float dashTime)
     {
         float timeElapsed = 0f;

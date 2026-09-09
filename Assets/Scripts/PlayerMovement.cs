@@ -44,6 +44,8 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private AnimationCurve jumpCurve;
     [SerializeField] private float maxDoubleJumpTime = 0.3f;
     [SerializeField] private AnimationCurve doubleJumpCurve;
+    [SerializeField] private DashAfterimage jumpAfterimage;
+    [SerializeField] private DashAfterimage doubleJumpAfterimage;
     private bool jumpAvalailable = false;
     private bool jumpButtonDown = false;
     private bool doubleJumpAvailable = false;
@@ -59,6 +61,7 @@ public class PlayerMovement : MonoBehaviour
     [Header("Redirection Parameters")]
     [SerializeField] private float releaseTime = 0.3f;
     [SerializeField] private float correctionTime = 0.1f;
+    [SerializeField] private DashAfterimage redirectionAfterimage;
 
 
     [Header("Movement Tech Tracking")]
@@ -221,6 +224,7 @@ public class PlayerMovement : MonoBehaviour
             player.additionalVector = -player.gravity * player.jumpForce;
             player.verticalVector = Vector2.zero;
             AudioManager.Instance.PlayJumpSound();
+            player.jumpAfterimage.StartDashEffect(player.maxJumpTime);
         }
         override public void CheckConditions()
         {
@@ -301,6 +305,7 @@ public class PlayerMovement : MonoBehaviour
             doubleJumpTime = player.maxDoubleJumpTime;
             player.doubleJumpUsed = true;
             AudioManager.Instance.PlayJumpSound();
+            player.doubleJumpAfterimage.StartDashEffect(player.maxDoubleJumpTime);
         }
 
         public override void CheckConditions()
@@ -443,6 +448,7 @@ public class PlayerMovement : MonoBehaviour
                             player.redirectPad = null;
                             AudioManager.Instance.PlayDischargeSound();
                             AudioManager.Instance.EndPowerSound();
+                            player.redirectionAfterimage.StartRedirectionEffect(player.releaseTime);
                         }
                         break;
                     }
@@ -1442,11 +1448,3 @@ public class PlayerMovement : MonoBehaviour
         cameraAnchor.ApplyOffset(cameraInputVector);
     }
 }
-
-
-//TODO 
-/*
-Add jump vfx
-Add dash afterimage vfx
-
-*/
