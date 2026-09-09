@@ -602,8 +602,11 @@ public class PlayerMovement : MonoBehaviour
                     waitingOnJumpUp = false;
                 }
             }
-            player.IsOnSurface();
+            bool onSurface = player.IsOnSurface();
             bool supported = HasSupport(midpoint);
+            if (onSurface && !supported && postCorrectionState) {
+                player.playerState = new StickingState(player);
+            }
             if (postCorrectionState) timeSincePostCorrectionStart += Time.deltaTime;
             if (supported && postCorrectionState || timeSincePostCorrectionStart >= postCorrectionLimit) {
                 postCorrectionState = false;
