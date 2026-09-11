@@ -56,7 +56,7 @@ public class DashAfterimage : MonoBehaviour
 
     private IEnumerator LeaveImage(SpriteRenderer image, float dashTime)
     {
-        Vector2 position = player.transform.position;
+        Vector2 position = player.transform.position +  new Vector3(0, 0.127f, 0);
         Quaternion rotation = player.transform.rotation;
         Color colour = image.color;
         colour.a = 1f;
