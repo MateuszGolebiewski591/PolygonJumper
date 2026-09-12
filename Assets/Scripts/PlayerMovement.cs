@@ -460,8 +460,8 @@ public class PlayerMovement : MonoBehaviour
                             FallingState state = new FallingState(player);
                             state.FromRedirection();
                             player.playerState = state;
-                            
                         }
+                        else if (!player.doubleJumpUsed && player.doubleJumpAvailable && player.jumpButtonDown && player.hasDoubleJump && timeSinceRelease > player.releaseTime/2f) player.playerState = new DoubleJumpState(player);
                         break;
                     }
             }
@@ -1449,5 +1449,22 @@ public class PlayerMovement : MonoBehaviour
             cameraInputVector = Vector2.zero;
         }
         cameraAnchor.ApplyOffset(cameraInputVector);
+    }
+
+    
+    public void NextLevel(InputAction.CallbackContext context)
+    {
+        if (context.started)
+        {
+            gameEventChannel.Raise(new EventData{eventType=EventType.NextLevel});
+        }
+    }
+
+    public void MainMenu(InputAction.CallbackContext context)
+    {
+        if (context.started)
+        {
+            gameEventChannel.Raise(new EventData{eventType=EventType.MainMenu});
+        }
     }
 }

@@ -13,6 +13,8 @@ public enum EventType
     LevelComplete,
     CheckpointReached,
     PortalEntered,
+    NextLevel,
+    MainMenu,
 }
 
 public struct EventData

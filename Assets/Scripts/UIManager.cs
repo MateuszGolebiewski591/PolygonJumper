@@ -40,6 +40,17 @@ public class UIManager : MonoBehaviour
                     AudioManager.Instance.PlayLevelCompleteSound();
                     break;
                 }
+            case EventType.NextLevel :
+                {
+                    if (PauseMenu.activeSelf) ResumeGame();
+                    else if (LevelCompleteMenu.activeSelf) NextLevel();
+                    break;
+                }
+            case EventType.MainMenu :
+                {
+                    if (PauseMenu.activeSelf || LevelCompleteMenu.activeSelf) ReturnToMainMenu();
+                    break;
+                }
         }
     }
 
@@ -56,7 +67,9 @@ public class UIManager : MonoBehaviour
 
     public void NextLevel()
     {
-        SceneManager.LoadSceneAsync(LevelManager.Instance.GetNextLevel()+1);
+        int nextIndex = LevelManager.Instance.GetNextLevel()+1;
+        if (nextIndex == 1) return;
+        SceneManager.LoadSceneAsync(nextIndex);
     }
 
 }
