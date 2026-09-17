@@ -6,7 +6,7 @@ public class MovementUnlock : MonoBehaviour
     [SerializeField] private MovementTech tech;
     void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.CompareTag("Player"))
+        if (other.CompareTag("Player")) //Handles updating save file after movement tech is unlocked
         {
             switch (tech)
             {

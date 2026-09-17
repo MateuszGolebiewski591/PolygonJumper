@@ -11,7 +11,7 @@ public class LevelComplete : MonoBehaviour
         portalCollider = GetComponent<BoxCollider2D>();
     }
 
-    void OnTriggerEnter2D(Collider2D other)
+    void OnTriggerEnter2D(Collider2D other) //Portal trigger
     {
         if (other.CompareTag("Player")) other.GetComponent<PlayerMovement>().TriggerPortal(this);
     }

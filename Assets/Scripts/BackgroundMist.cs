@@ -33,18 +33,7 @@ public class BackgroundMis : MonoBehaviour
         Apply();
     }
 
-    void OnValidate()
-    {
-        if (!meshRenderer)
-            meshRenderer = GetComponent<MeshRenderer>();
-
-        if (block == null)
-            block = new MaterialPropertyBlock();
-
-        Apply();
-    }
-
-    void Apply()
+    void Apply() //Sets up property block for mist shader
     {
         meshRenderer.GetPropertyBlock(block);
         block.SetColor("_FogColour", colour);

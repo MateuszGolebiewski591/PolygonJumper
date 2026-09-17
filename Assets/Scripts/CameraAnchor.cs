@@ -22,7 +22,7 @@ public class CameraAnchor : MonoBehaviour
 
     void LateUpdate()
     {
-        if (center)
+        if (center) //Prioritise centering
         {
             transform.position = player.transform.position;
             center = false;
@@ -33,7 +33,7 @@ public class CameraAnchor : MonoBehaviour
         }
         if (Vector2.Distance(referencePlayerPosition, player.transform.position) < 0.001f && Vector2.Distance(transform.position, player.transform.position) > 0.001f && !positionFreezing)
         {
-            if (delayedCenter && !center)
+            if (delayedCenter && !center) //Begins smoothly moving camera back towards player before the hard boundary which forcibly moves camera
             {
                 transform.position = Vector2.SmoothDamp(transform.position, player.transform.position, ref referenceVector, centerSpeed);
                 if (Vector2.Distance(transform.position, player.transform.position) < 0.01f) {
@@ -48,14 +48,14 @@ public class CameraAnchor : MonoBehaviour
             timer = StartCoroutine(ResetDelay());
             return;
         }
-        else if (timer != null) 
+        else if (timer != null) //cleanup after timer
         {
             StopCoroutine(timer);
             timer = null;
             delayedCenter = false;
             referenceVector = Vector2.zero;
         }
-        if (positionFreezing)
+        if (positionFreezing) //Computes difference in player position and moves anchor accordingly, accounting for arrow keys offseting the camera
         {
             Vector2 currentPlayerLocation = player.transform.position;
             Vector2 difference = currentPlayerLocation - lastPlayerLocation;
@@ -63,7 +63,7 @@ public class CameraAnchor : MonoBehaviour
             savedAnchorLocation += difference;
             transform.position = savedAnchorLocation + cameraOffset * cameraOffsetAmount;
         }
-        else
+        else //If anchor too far away from the player, move it closer to the player
         {
             float newX = player.transform.position.x;
             float newY = transform.position.y;
@@ -109,18 +109,18 @@ public class CameraAnchor : MonoBehaviour
         cameraOffset = Vector2.zero;
     }
 
-    public void ApplyOffset(Vector2 anchorOffset)
+    public void ApplyOffset(Vector2 anchorOffset) //Arrow key camera movement by player
     {
         cameraOffset = anchorOffset;
-        if (cameraOffset != Vector2.zero) {
-            if (!positionFreezing) {
+        if (cameraOffset != Vector2.zero) { //camera input
+            if (!positionFreezing) { //locks in the camera offset and related variables if not already
                 positionFreezing = true;
                 savedAnchorLocation = transform.position;
                 lastPlayerLocation = player.transform.position;
             }
         }
-        else {
-            if (positionFreezing)
+        else {//no input
+            if (positionFreezing) //resets variables
             {
                 positionFreezing = false;
                 lastPlayerLocation = Vector2.zero;
@@ -130,12 +130,12 @@ public class CameraAnchor : MonoBehaviour
         }
     } 
 
-    public void CenterAnchor()
+    public void CenterAnchor() //Used by player for example during interaction with redirection pad
     {
         center = true;
     }  
 
-    private IEnumerator ResetDelay()
+    private IEnumerator ResetDelay() //Delay before camera is re-centred
     {
         yield return new WaitForSeconds(timeBeforeAnchorReset);
         delayedCenter = true;

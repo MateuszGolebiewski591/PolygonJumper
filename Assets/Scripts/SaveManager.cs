@@ -15,7 +15,7 @@ public class SaveManager : MonoBehaviour
         if (Instance != null && Instance != this) Destroy(gameObject);
         else Instance = this;
         path = Path.Combine(Application.persistentDataPath,"save.json");
-        if (!Load())
+        if (!Load()) //If save data not loaded correctly or not present, create new save file
         {
             globalPlayerState.hasAirDash = false;
             globalPlayerState.hasDoubleJump = false;
@@ -27,7 +27,7 @@ public class SaveManager : MonoBehaviour
         }
     }
 
-    public void Save()
+    public void Save() //Handles saving data
     {
         SaveData save = new SaveData{hasAirDash=globalPlayerState.hasAirDash, 
         hasDoubleJump=globalPlayerState.hasDoubleJump, 
@@ -39,20 +39,7 @@ public class SaveManager : MonoBehaviour
         File.WriteAllText(path, json);
     }
 
-    public void CreateSave()
-    {
-        SaveData save = new SaveData{hasAirDash=false, 
-        hasDoubleJump=false, 
-        hasRotation=false,
-        levelsUnlocked=new bool[16],
-        };
-        save.levelsUnlocked[0] = true;
-        for (int i = 1; i < 16; i++) save.levelsUnlocked[i] = false;
-        string json = JsonUtility.ToJson(save);
-        File.WriteAllText(path, json);
-    }
-
-    public bool Load()
+    public bool Load() //Loads the file and checks for errors
     {
         if (File.Exists(path))
         {

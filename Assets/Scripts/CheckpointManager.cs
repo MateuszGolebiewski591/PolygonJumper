@@ -11,18 +11,18 @@ public class CheckpointManager : MonoBehaviour
     {
         if (Instance != null && Instance != this) Destroy(gameObject);
         else Instance = this;
-        for (int i = 0; i < transform.childCount; i++)
+        for (int i = 0; i < transform.childCount; i++) //Gives and ID to each checkpoint
         {
             transform.GetChild(i).GetComponent<RespawnPoint>().SetID(i);
         }
         startPoint = transform.GetChild(0).GetComponent<RespawnPoint>().point;
-        globalPlayerState.respawnPoint = startPoint.position;
+        globalPlayerState.respawnPoint = startPoint.position; //Sets initial spawn point
     }
 
     public void RespawnPointTriggered(int id, Transform position)
     {
-        if (id <= currentCheckpoint) return;
-        globalPlayerState.respawnPoint = position.position;
+        if (id <= currentCheckpoint) return; //Ignore existing checkpoints
+        globalPlayerState.respawnPoint = position.position; //Update to new checkpoint
         gameEventChannel.Raise(new EventData{eventType=EventType.CheckpointReached});
     }
 

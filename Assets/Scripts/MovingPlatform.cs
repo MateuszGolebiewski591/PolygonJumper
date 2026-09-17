@@ -48,7 +48,7 @@ public class MovingPlatform : MonoBehaviour
     }
 
     void Awake()
-    {
+    {//Standard resets and beginning first cycle
         points = new Vector2[pointsFolder.childCount];
         for (int i = 0; i < pointsFolder.childCount; i++)
         {
@@ -60,14 +60,14 @@ public class MovingPlatform : MonoBehaviour
         BeginCycle();
     }
 
-    private void BeginCycle()
+    private void BeginCycle() //Swaps direction and starts cycle
     {
         if (currentStartingIndex == 0) currentStartingIndex = points.Length-1;
         else currentStartingIndex = 0;
         currentCycle = StartCoroutine(Cycle());
     }
 
-    private IEnumerator Cycle()
+    private IEnumerator Cycle() //Moves platform from one point to another followning either forward or backward list order
     {
         if (currentStartingIndex == 0)
         {

@@ -102,7 +102,7 @@ public class PlayerMovement : MonoBehaviour
     private PlayerStateNum state = PlayerStateNum.Falling;
     private PlayerState playerState;
 
-    private enum PlayerStateNum
+    private enum PlayerStateNum //The various states the player can be in
     {
         Grounded,
         Jumping,
@@ -148,7 +148,7 @@ public class PlayerMovement : MonoBehaviour
             else player.doubleJumpAvailable = false;
         }
 
-        public void FromRedirection()
+        public void FromRedirection() //Redirection momentum not to be clamped
         {
             fromRedirection = true;
         }
@@ -177,8 +177,8 @@ public class PlayerMovement : MonoBehaviour
                 Vector2.Normalize(cumulativeVerticalVector);
                 cumulativeVerticalVector *= player.terminalVelocity;
             }
-            player.verticalVector = cumulativeVerticalVector;
-            player.horizontalVector = player.movementSpeed * Vector2.Dot(player.inputVector, Vector2.left) * Vector2.left;
+            player.verticalVector = cumulativeVerticalVector; 
+            player.horizontalVector = player.movementSpeed * Vector2.Dot(player.inputVector, Vector2.left) * Vector2.left; //Handles calculating horizontal movement
             if (player.horizontalVector.x * initialAdditionalVector.x < 0) {
                 initialAdditionalVector.x = 0;
                 player.additionalVector.x = 0;
@@ -190,7 +190,7 @@ public class PlayerMovement : MonoBehaviour
                 float excess = total - player.maxAirMovementSpeed;
                 player.horizontalVector.x -= excess;
             }
-            else if (player.horizontalVector.x + player.additionalVector.x < -player.maxAirMovementSpeed)
+            else if (player.horizontalVector.x + player.additionalVector.x < -player.maxAirMovementSpeed) //Same as above but in opposite direction
             {
                 float total = player.horizontalVector.x + player.additionalVector.x; 
                 float excess = total + player.maxAirMovementSpeed;
@@ -234,7 +234,7 @@ public class PlayerMovement : MonoBehaviour
             }
             elapsedJumpTime += Time.deltaTime;
             bool grounded = player.IsOnSurface();
-            if (!grounded && player.jumpButtonDown && !player.airDashAvailable)
+            if (!grounded && player.jumpButtonDown && !player.airDashAvailable) //Ensures we don't get stuck to the ground
             {
                 airborne = true;
                 player.airDashAvailable = true;
@@ -275,7 +275,7 @@ public class PlayerMovement : MonoBehaviour
                 float excess = total - player.maxAirMovementSpeed;
                 player.horizontalVector.x -= excess;
             }
-            else if (player.horizontalVector.x + player.additionalVector.x < -player.maxAirMovementSpeed)
+            else if (player.horizontalVector.x + player.additionalVector.x < -player.maxAirMovementSpeed) //Same as above but in the opposite direction
             {
                 float total = player.horizontalVector.x + player.additionalVector.x; 
                 float excess = total + player.maxAirMovementSpeed;
@@ -321,7 +321,7 @@ public class PlayerMovement : MonoBehaviour
             else if (timeElapsedSinceJump >= doubleJumpTime) player.playerState = new FallingState(player);
         }
 
-        public override void UpdatePlayer()
+        public override void UpdatePlayer() //Upwards movement based on curve defined in editor
         {
             player.additionalVector.y = 0;
             player.horizontalVector = player.movementSpeed * Vector2.Dot(player.inputVector, Vector2.left) * Vector2.left;
@@ -375,7 +375,7 @@ public class PlayerMovement : MonoBehaviour
             else if (elapsedAirDashTime >= airDashTime) player.playerState = new FallingState(player);
         }
 
-        override public void UpdatePlayer()
+        override public void UpdatePlayer() //lateral movement based on curve defined in editor
         {
             if (Vector2.Dot(player.inputVector, airDashDirection) < 0 && elapsedAirDashTime < 0.8f * airDashTime) elapsedAirDashTime = 0.8f * airDashTime;
             float dashSpeed = player.airDashCurve.Evaluate(elapsedAirDashTime/airDashTime);
@@ -428,7 +428,7 @@ public class PlayerMovement : MonoBehaviour
             if (jumpButtonInitiallyPressed && !player.jumpButtonDown) releaseAvailable = true;
             switch (stage)
             {
-                case Stage.correction : {
+                case Stage.correction : { //Checks if player is centered over the pad
                         elapsedCorrectionTime += Time.deltaTime;
                         if (elapsedCorrectionTime > player.correctionTime) {
                             stage = Stage.player;
@@ -438,7 +438,7 @@ public class PlayerMovement : MonoBehaviour
                         }
                         break;
                     }
-                case Stage.player :
+                case Stage.player : //Waits for player to press the release button
                     {
                         if (player.jumpButtonDown && releaseAvailable) {
                             player.additionalVector = preservedMotion;
@@ -452,7 +452,7 @@ public class PlayerMovement : MonoBehaviour
                         }
                         break;
                     }
-                case Stage.ejection :
+                case Stage.ejection : //Handles shift from ejection to other states
                     {
                         timeSinceRelease += Time.deltaTime;
                         if (timeSinceRelease > player.releaseTime) {
@@ -471,13 +471,13 @@ public class PlayerMovement : MonoBehaviour
         {
             switch (stage)
             {
-                case Stage.correction : {
+                case Stage.correction : { //Centres the player over the redirection pad
                         player.transform.position = Vector3.Lerp(initialPlayerPosition, player.redirectPad.transform.position, Mathf.Clamp01(elapsedCorrectionTime/player.correctionTime));
                         float angle = Mathf.Atan2(preservedMotion.y, preservedMotion.x) * Mathf.Rad2Deg;
                         player.redirectPad.UpdatePointer(angle);
                         break;
                     }
-                case Stage.player :
+                case Stage.player : //Handles state within redirection pad
                     {
                         if (player.rollLeftButtonDown) {
                             player.transform.Rotate(0f, 0f, -player.rotationSpeed*Time.deltaTime);
@@ -491,7 +491,7 @@ public class PlayerMovement : MonoBehaviour
                         player.redirectPad.UpdatePointer(angle);
                         break;
                     }
-                case Stage.ejection :
+                case Stage.ejection : //Handles the ejection movement
                     {
                         cumulativeLateralDecay *= player.lateralMovementDecay;
                         player.additionalVector = preservedMotion;
@@ -528,7 +528,7 @@ public class PlayerMovement : MonoBehaviour
             if (elapsedCorrectionTime > player.correctionTime) player.gameEventChannel.Raise(new EventData{eventType=EventType.PortalEntered});
         }
 
-        override public void UpdatePlayer()
+        override public void UpdatePlayer() //Centres the player over the portal
         {
             float t = Mathf.Clamp01(elapsedCorrectionTime/player.correctionTime);
             player.transform.position = Vector3.Lerp(initialPlayerPosition, player.portal.transform.position, t);
@@ -579,7 +579,7 @@ public class PlayerMovement : MonoBehaviour
                 player.playerState = new CompletionState(player);
                 return;
             }
-            Vector2[] points = player.playerCollider.points;
+            Vector2[] points = player.playerCollider.points; //Calculating current normal
             Vector2 a = player.playerCollider.transform.TransformPoint(points[localFaceIndex]);
             Vector2 b = player.playerCollider.transform.TransformPoint(points[(localFaceIndex + 1) % points.Length]);
             Vector2 edge = b - a;
@@ -604,10 +604,10 @@ public class PlayerMovement : MonoBehaviour
             }
             bool onSurface = player.IsOnSurface();
             bool supported = HasSupport(midpoint);
-            if (onSurface && !supported && postCorrectionState) {
+            if (onSurface && !supported && postCorrectionState) { //Safety feature
                 player.playerState = new StickingState(player);
             }
-            if (postCorrectionState) timeSincePostCorrectionStart += Time.deltaTime;
+            if (postCorrectionState) timeSincePostCorrectionStart += Time.deltaTime; //Post correction to improve stability of edge transitions
             if (supported && postCorrectionState || timeSincePostCorrectionStart >= postCorrectionLimit) {
                 postCorrectionState = false;
                 timeSincePostCorrectionStart = 0;
@@ -669,7 +669,7 @@ public class PlayerMovement : MonoBehaviour
 
         override public void UpdatePlayer()
         {
-            if (correctionState)
+            if (correctionState) //Rotates around corner
             {
                 player.verticalVector = Vector2.zero;
                 player.horizontalVector = Vector2.zero;
@@ -691,7 +691,7 @@ public class PlayerMovement : MonoBehaviour
                 player.transform.Rotate(0f, 0f, rotationThisFrame);
                 player.transform.position = newPosition;
             }
-            else
+            else //Ensures the player is firmly attached to the surface
             {
                 player.verticalVector = player.gravity;
                 if (player.inputVector != Vector2.zero) {
@@ -704,14 +704,14 @@ public class PlayerMovement : MonoBehaviour
             } 
         }
 
-        private bool HasSupport(Vector2 midpoint)
+        private bool HasSupport(Vector2 midpoint) //Checks if midpoint is above a surface or hovering beyond an edge
         {
             Vector2 normal = player.gravity.normalized;
             RaycastHit2D hit = Physics2D.Raycast(midpoint, normal, 0.2f, player.groundLayer);
             return hit.collider != null;
         }
 
-        private Vector2 GetSurfaceNormal(int index)
+        private Vector2 GetSurfaceNormal(int index) //For a given point, gets the surface normals for its and the next edge
         {
             Vector2[] surfacePoints = player.currentSurface.points;
             Vector2 a = player.currentSurface.transform.TransformPoint(surfacePoints[index]);
@@ -738,7 +738,7 @@ public class PlayerMovement : MonoBehaviour
                     closestDistance = distance;
                     closestCorner = i;
                 }
-            }
+            } //Works out which way our persistent travel should now take us, allowing for complete traversal of polygons with one persisten input
             Vector2 currentPoint = player.currentSurface.transform.TransformPoint(surfacePoints[closestCorner]);
             Vector2 nextPoint = player.currentSurface.transform.TransformPoint(surfacePoints[(closestCorner + 1) % surfacePoints.Length]);
             Vector2 prevPoint = player.currentSurface.transform.TransformPoint(surfacePoints[(closestCorner - 1 + surfacePoints.Length) % surfacePoints.Length]);
@@ -791,11 +791,11 @@ public class PlayerMovement : MonoBehaviour
             Vector2 b = player.playerCollider.transform.TransformPoint(points[(localFaceIndex + 1) % points.Length]);
             Vector2 edge = b - a;
             Vector2 currentNormal = new Vector2(-edge.y, edge.x).normalized;
-            Vector2 midpoint = (a + b) / 2f;
+            Vector2 midpoint = (a + b) / 2f; //Checking if we are close enough to the target normal to snap to it
             if (Vector2.Dot(currentNormal, midpoint - (Vector2)player.transform.position) < 0f) currentNormal = -currentNormal;
             if (Vector2.Dot(-currentNormal, targetNormal) > 0.99995f) player.playerState = new GroundedState(player, localFaceIndex);
         }
-        override public void UpdatePlayer() 
+        override public void UpdatePlayer() //Rotates the player around the sticking point
         {
             Vector2[] points = player.playerCollider.points;
             Vector2 a = player.playerCollider.transform.TransformPoint(points[localFaceIndex]);
@@ -809,10 +809,10 @@ public class PlayerMovement : MonoBehaviour
             float rotateSpeed = 720f;
             float step = rotateSpeed * Time.deltaTime;
             float rotationThisFrame = Mathf.Clamp(angleDelta, -step, step);
-            Vector2 offset = (Vector2)player.transform.position - stickingPoint;
-            Vector2 rotatedOffset = Quaternion.Euler(0f, 0f, rotationThisFrame) * offset;
-            Vector2 newPosition = stickingPoint + rotatedOffset;
-            player.transform.Rotate(0f, 0f, rotationThisFrame);
+            Vector2 offset = (Vector2)player.transform.position - stickingPoint; //Vector from sticking point to triangle centre
+            Vector2 rotatedOffset = Quaternion.Euler(0f, 0f, rotationThisFrame) * offset; //Rotate vector
+            Vector2 newPosition = stickingPoint + rotatedOffset; //Expected triangle position when rotating around the sticking point
+            player.transform.Rotate(0f, 0f, rotationThisFrame); //The actual rotation of the triangle
             player.transform.position = newPosition;
         }
 
@@ -1038,7 +1038,7 @@ public class PlayerMovement : MonoBehaviour
             Vector2[] points = hitbox.points;
             float closestDistance = float.MaxValue;
             int closestIndex = -1;
-            for (int i = 0; i < points.Length; i++)
+            for (int i = 0; i < points.Length; i++) //Looks for the closest corner to the contact point
             {
                 Vector2 worldPoint = hitbox.transform.TransformPoint(points[i]);
                 float distance = Vector2.Distance(contactPoint, worldPoint);
@@ -1049,7 +1049,7 @@ public class PlayerMovement : MonoBehaviour
                 }
             }
             float cornerTolerance = 0.1f;
-            if (closestDistance <= cornerTolerance)
+            if (closestDistance <= cornerTolerance) //Returns whether we're close to the corner or deep inside an edge
             {
                 cornerIndex = closestIndex;
                 return true;
@@ -1059,7 +1059,7 @@ public class PlayerMovement : MonoBehaviour
 
         private void StabilizeTargetFace(int closestCornerIndex)
         {
-            Vector2[] triPoints = player.playerCollider.points;
+            Vector2[] triPoints = player.playerCollider.points; //Finds player's current normal
             Vector2 faceA = player.playerCollider.transform.TransformPoint(triPoints[localFaceIndex]);
             Vector2 faceB = player.playerCollider.transform.TransformPoint(triPoints[(localFaceIndex + 1) % triPoints.Length]);
             Vector2 edge = faceB - faceA;
@@ -1074,21 +1074,21 @@ public class PlayerMovement : MonoBehaviour
             Vector2 prevEdge = (prevPoint - cornerPoint).normalized;
             Vector2 nextEdge = (nextPoint - cornerPoint).normalized;
 
-            Vector2 midpointVector = (faceMidpoint - cornerPoint).normalized;
+            Vector2 midpointVector = (faceMidpoint - cornerPoint).normalized; //Vector from the corner to the midpoint of the triangle face we're aligning
             float prevDot = Vector2.Dot(midpointVector, prevEdge);
             float nextDot = Vector2.Dot(midpointVector, nextEdge);
-            if (Mathf.Abs(nextDot - prevDot) < 0.4825f)
+            if (Mathf.Abs(nextDot - prevDot) < 0.4825f) //No clear victor
             {
-                Vector2 prevNormal = new Vector2(-prevEdge.y, prevEdge.x).normalized;
+                Vector2 prevNormal = new Vector2(-prevEdge.y, prevEdge.x).normalized; //Work out the normals for the edges instead
                 Vector2 nextNormal = new Vector2(-nextEdge.y, nextEdge.x).normalized;
                 Vector2 prevMidpoint = (prevPoint + cornerPoint)/2f;
                 Vector2 nextMidpoint = (nextPoint + cornerPoint)/2f;
                 if (Vector2.Dot(prevNormal, prevMidpoint - (Vector2)player.currentSurface.bounds.center) < 0f) prevNormal = -prevNormal;
                 if (Vector2.Dot(nextNormal, nextMidpoint - (Vector2)player.currentSurface.bounds.center) < 0f) nextNormal = -nextNormal;
-                bool prevPrediction = PredictPosition(cornerPoint, faceMidpoint, currentNormal, prevNormal);
+                bool prevPrediction = PredictPosition(cornerPoint, faceMidpoint, currentNormal, prevNormal); //Simulate aligning the triangle to those edges
                 bool nextPrediction = PredictPosition(cornerPoint, faceMidpoint, currentNormal, nextNormal);
                 if (prevPrediction && nextPrediction) return;
-                if (prevPrediction && !nextPrediction)
+                if (prevPrediction && !nextPrediction) //Predictions are final judge of which face we're aligning to
                 {
                     if (closestCornerIndex == targetIndex)
                     {
@@ -1110,7 +1110,7 @@ public class PlayerMovement : MonoBehaviour
             float currentDot, challengeDot;
             Vector2 challengeEdge;
             int challengeIndex;
-            if (closestCornerIndex == targetIndex)
+            if (closestCornerIndex == targetIndex) //Splitting edges into the current one and the one that challenges it
             {
                 challengeDot = Vector2.Dot(midpointVector, prevEdge);
                 currentDot = Vector2.Dot(midpointVector, nextEdge);
@@ -1139,7 +1139,7 @@ public class PlayerMovement : MonoBehaviour
         } 
 
         private bool PredictPosition(Vector2 cornerPoint, Vector2 midpoint,  Vector2 currentNormal, Vector2 candidateTargetNormal)
-        {
+        { //Simulates where the midpoint will be after rotation thanks to which we can prevent a scenario where the triangle rotates one way then immediately goes the other
             float angle = Vector2.SignedAngle(currentNormal, -candidateTargetNormal);
             Vector2 predictedMidpoint = RotatePointAroundPivot(midpoint, cornerPoint, angle);
             RaycastHit2D hit = Physics2D.Raycast(predictedMidpoint, -candidateTargetNormal, 1f, player.groundLayer);
@@ -1184,14 +1184,14 @@ public class PlayerMovement : MonoBehaviour
         HandleMovement();
     }
 
-    void Update()
+    void Update() //Updates highlight shader attached to player
     {
         Vector2 lightDirection = (goal.transform.position - transform.position).normalized;
         Vector2 localLightDirection = transform.InverseTransformDirection(lightDirection);
         shineMaterial.SetVector("_PlayerToLightVector", localLightDirection);
     }
     
-    private void HandleMovement()
+    private void HandleMovement() //Calls state machine and updates movement
     {
         if (overrideMovement) {
             rb.linearVelocity = Vector2.zero;
@@ -1204,7 +1204,7 @@ public class PlayerMovement : MonoBehaviour
 
     
 
-    private void HandleEvent(EventData data)
+    private void HandleEvent(EventData data) //Response to global events happening
     {
         switch (data.eventType)
         {
@@ -1258,7 +1258,7 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 
-    private void ResetPlayer()
+    private void ResetPlayer() //Full variable reset
     {
         Time.timeScale = 1f;
         sprite.enabled = true;
@@ -1287,13 +1287,13 @@ public class PlayerMovement : MonoBehaviour
     }
 
 
-    private bool IsOnSurface()
+    private bool IsOnSurface() //Checks if the player is in contact with any surface
     {
         Vector2[] colliderPoints = playerCollider.points;
         float closestSide = float.MaxValue;
         bool foundSurface = false;
 
-        for (int i = 0; i < colliderPoints.Length; i++)
+        for (int i = 0; i < colliderPoints.Length; i++) //For each face
         {
             Vector2 vA = transform.TransformPoint(colliderPoints[i]);
             Vector2 vB = transform.TransformPoint(colliderPoints[(i + 1) % colliderPoints.Length]);
@@ -1301,15 +1301,15 @@ public class PlayerMovement : MonoBehaviour
             Vector2 midPoint = (vA + vB)/2f;
             Vector2 surfaceVector = vB - vA;
 
-            Vector2 normal = new Vector2(-surfaceVector.y, surfaceVector.x).normalized;
+            Vector2 normal = new Vector2(-surfaceVector.y, surfaceVector.x).normalized; //Gets normal facing away from the triangle
             if (Vector2.Distance(transform.position, midPoint+normal) > Vector2.Distance(transform.position, midPoint)) normal = -normal;
 
             float edgeLength = Vector2.Distance(vA, vB);
             Vector2 boxSize = new Vector2(edgeLength, edgeThickness);
             Vector2 edgeDir = surfaceVector.normalized;
             float angle = Mathf.Atan2(edgeDir.y, edgeDir.x) * Mathf.Rad2Deg;
-            RaycastHit2D hit = Physics2D.BoxCast(midPoint, boxSize, angle, normal, edgeThickness, groundLayer);
-            if (hit)
+            RaycastHit2D hit = Physics2D.BoxCast(midPoint, boxSize, angle, normal, edgeThickness, groundLayer); //Creates boxcast away from the triangle
+            if (hit) //Evaluates which side is closest to the contact point
             {
                 if (hit.distance < closestSide)
                 {
@@ -1342,7 +1342,7 @@ public class PlayerMovement : MonoBehaviour
         StartCoroutine(PlayPulse());
     }
 
-    private IEnumerator PlayPulse()
+    private IEnumerator PlayPulse() //Changes the size and opacity of pulse over time using curves
     {
         float timeElapsed = 0f;
         Color colour = pulseSprite.color;
@@ -1360,8 +1360,7 @@ public class PlayerMovement : MonoBehaviour
         pulseSprite.enabled = false;
     }
     
-    
-
+    //Input handling
     public void Jump(InputAction.CallbackContext context)
     {
         if (!inputsAllowed) return;

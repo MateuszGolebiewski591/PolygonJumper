@@ -38,13 +38,13 @@ public class RedirectPad : MonoBehaviour
         }
     }
 
-    private IEnumerator TrackPlayerPosition(Collider2D other)
+    private IEnumerator TrackPlayerPosition(Collider2D other) //If player is close enough trigger redirection states
     {
         while (Vector2.Distance(other.transform.position, transform.position) > triggerDistance) yield return null;
         other.GetComponent<PlayerMovement>().TriggerRedirection(this);
     }
 
-    private IEnumerator Cooldown()
+    private IEnumerator Cooldown() //Prevents immediate reactivation of redirection pad
     {
         float elapsedTime = 0f;
         cooldownActive = true;
@@ -55,12 +55,12 @@ public class RedirectPad : MonoBehaviour
         cooldownActive = false;
     }
 
-    public void UpdatePointer(float angle)
+    public void UpdatePointer(float angle) //Arrow update
     { 
         pointer.transform.rotation = Quaternion.Euler(new Vector3(0,0,angle));
     }
 
-    public void LoadPad(float angle)
+    public void LoadPad(float angle) //Activates the pad visually 
     {
         UpdatePointer(angle);
         pointer.gameObject.SetActive(true);
@@ -69,7 +69,7 @@ public class RedirectPad : MonoBehaviour
         foreach (SpriteRenderer fin in fins) fin.SetPropertyBlock(propertyBlock);
     }
 
-    public void UnloadPad()
+    public void UnloadPad() //Deactivates the pad visually
     {
         pointer.gameObject.SetActive(false);
         propertyBlock.SetFloat("_Activation", 0f);

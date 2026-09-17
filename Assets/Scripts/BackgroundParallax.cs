@@ -24,13 +24,13 @@ public class BackgroundParallax : MonoBehaviour
 
     void Awake()
     {
-        offsets = new Vector3[backgroundLayers.Length];
-        respawnOffsets = new Vector3[backgroundLayers.Length];
+        offsets = new Vector3[backgroundLayers.Length]; //displacement of item based on current checkpoint
+        respawnOffsets = new Vector3[backgroundLayers.Length]; //Used when checkpoint reached
         for (int i = 0; i < backgroundLayers.Length; i++) offsets[i] = backgroundLayers[i].transform.localPosition;    
     }
 
     void Update()
-    {
+    { //Difference in camera position multiplied by how much we want the player to move in both the x and y axis
         Vector3 difference = cameraPosition.position - previousCameraPosition;
         for (int i = 0; i < backgroundLayers.Length; i++)
         {
@@ -43,13 +43,13 @@ public class BackgroundParallax : MonoBehaviour
     {
         switch(eventData.eventType)
         {
-            case EventType.LevelReset :
+            case EventType.LevelReset : //Resets positions to saved offsets
                 {
                     previousCameraPosition = globalPlayerState.respawnPoint;
                     for (int i = 0; i < backgroundLayers.Length; i++) backgroundLayers[i].transform.localPosition = offsets[i];
                     break;
                 }
-            case EventType.CheckpointReached :
+            case EventType.CheckpointReached : //Computes remaining distance to checkpoint and therefore the correct offset
                 {
                     Vector2 cam = cameraPosition.position;
                     Vector2 difference = globalPlayerState.respawnPoint - cam;

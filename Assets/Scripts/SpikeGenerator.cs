@@ -20,14 +20,6 @@ public class SpikeStripGenerator : MonoBehaviour
         Generate();
     }
 
-#if UNITY_EDITOR
-    private void OnValidate()
-    {
-        Initialise();
-        Generate();
-    }
-#endif
-
     private void Initialise()
     {
         meshFilter = GetComponent<MeshFilter>();

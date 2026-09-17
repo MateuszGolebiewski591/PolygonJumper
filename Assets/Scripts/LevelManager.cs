@@ -33,7 +33,7 @@ public class LevelManager : MonoBehaviour
     {
         switch (data.eventType)
         {
-            case EventType.LevelComplete :
+            case EventType.LevelComplete : //Updates save file after completing a level
                 {
                     globalPlayerState.levelsUnlocked[(levelData.levelIndex + 1) % globalPlayerState.levelsUnlocked.Length] = true;
                     SaveManager.Instance.Save();
@@ -42,7 +42,7 @@ public class LevelManager : MonoBehaviour
         }
     }
 
-    public int GetNextLevel()
+    public int GetNextLevel() //Works out next level based on current level data
     {
         return (levelData.levelIndex + 1) % globalPlayerState.levelsUnlocked.Length;
     }

@@ -30,7 +30,7 @@ public class DeathParticleSystem : MonoBehaviour
         StartCoroutine(DelayRespawn());
     }
 
-    private IEnumerator DelayRespawn()
+    private IEnumerator DelayRespawn() //Relaying respawn while particles play
     {
         yield return new WaitForSeconds(0.2f);
         gameEventChannel.Raise(new EventData{eventType=EventType.LevelReset});
@@ -47,7 +47,7 @@ public class DeathParticleSystem : MonoBehaviour
                         transform.position = player.position;
                         smallDeathParticles.transform.position = player.position;
                         PlayDeath();
-                        hasDied = true;
+                        hasDied = true; //Prevents particle spamming
                     }
                     break;
                 }

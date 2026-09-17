@@ -24,12 +24,12 @@ public class CompletionParticleSystem : MonoBehaviour
         largeCompletionParticles.Play();
     }
 
-    private void OnParticleSystemStopped()
+    private void OnParticleSystemStopped() //Callback from particle animation completing
     {
         StartCoroutine(DelayCompletion());
     }
 
-    private IEnumerator DelayCompletion()
+    private IEnumerator DelayCompletion() //Particles play during a short pause
     {
         yield return new WaitForSeconds(0.2f);
         gameEventChannel.Raise(new EventData{eventType=EventType.LevelComplete});

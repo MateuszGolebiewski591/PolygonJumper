@@ -26,13 +26,13 @@ public class MainMenuManager : MonoBehaviour
         Button[] buttons = levelPanel.GetComponentsInChildren<Button>(true);
         ColorUtility.TryParseHtmlString("#B7AEAEFF", out Color lockedColour);
         ColorUtility.TryParseHtmlString("#FFFFFFFF", out Color unlockedColour);
-        for (int i = 0; i < globalPlayerState.levelsUnlocked.Length; i++)
+        for (int i = 0; i < globalPlayerState.levelsUnlocked.Length; i++) //Level buttons updated according to individual level scriptable objects
         {
-            TextMeshProUGUI[] text = buttons[i].gameObject.GetComponentsInChildren<TextMeshProUGUI>(true);
+            TextMeshProUGUI[] text = buttons[i].gameObject.GetComponentsInChildren<TextMeshProUGUI>(true); //Text
             text[0].text = "Level " + (i+1);
             text[1].text = levelData[i].displayName;
             if (!globalPlayerState.levelsUnlocked[i]) {
-                foreach (Transform child in buttons[i].transform)
+                foreach (Transform child in buttons[i].transform) //Colour
                 {
                     Image image = child.GetComponent<Image>();
                     if (image != null) image.color = lockedColour;
@@ -42,7 +42,8 @@ public class MainMenuManager : MonoBehaviour
         }
     }
 
-    public void QuitGame()
+    //Simple Button functions
+    public void QuitGame() 
     {
         Application.Quit();
     }

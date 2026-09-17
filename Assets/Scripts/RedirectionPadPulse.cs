@@ -28,7 +28,7 @@ public class RedirectionPadPulse : MonoBehaviour
         StartCoroutine(PlayPulse());
     }
 
-    private IEnumerator PlayPulse()
+    private IEnumerator PlayPulse() //Enlarges and changes opacity of pulse based on curves defined in editor
     {
         float timeElapsed = 0f;
         foreach (SpriteRenderer fin in fins) {

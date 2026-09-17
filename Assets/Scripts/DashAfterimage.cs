@@ -18,7 +18,7 @@ public class DashAfterimage : MonoBehaviour
         StartCoroutine(RedirectionDashEffect(time));
     }
 
-    private IEnumerator RedirectionDashEffect(float dashTime)
+    private IEnumerator RedirectionDashEffect(float dashTime) //Repeated pause followed by spawning an afterimage (longer for redirection pad)
     {
         float timeElapsed = 0f;
         while (timeElapsed < dashTime/4f) {
@@ -38,7 +38,7 @@ public class DashAfterimage : MonoBehaviour
         StartCoroutine(LeaveImage(image3, dashTime));
     }
 
-    private IEnumerator DashEffect(float dashTime)
+    private IEnumerator DashEffect(float dashTime) //Same as above (shorter for dash)
     {
         float timeElapsed = 0f;
         StartCoroutine(LeaveImage(image1, dashTime));
@@ -56,14 +56,14 @@ public class DashAfterimage : MonoBehaviour
 
     private IEnumerator LeaveImage(SpriteRenderer image, float dashTime)
     {
-        Vector2 position = player.transform.position +  new Vector3(0, 0.127f, 0);
+        Vector2 position = player.transform.position +  new Vector3(0, 0.127f, 0); //Standard sprite resetting
         Quaternion rotation = player.transform.rotation;
         Color colour = image.color;
         colour.a = 1f;
         image.enabled = true;
         image.color = colour;
         float timeElapsed = 0f;
-        while (timeElapsed < dashTime)
+        while (timeElapsed < dashTime) //Fades out the sprite over time
         {
             timeElapsed += Time.deltaTime;
             image.transform.position = position;

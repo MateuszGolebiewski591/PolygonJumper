@@ -19,20 +19,7 @@ public class PolygonAppearance : MonoBehaviour
         ApplyColours();
     }
 
-#if UNITY_EDITOR
-    private void OnValidate()
-    {
-        if (meshRenderer == null)
-            meshRenderer = GetComponent<MeshRenderer>();
-
-        if (propertyBlock == null)
-            propertyBlock = new MaterialPropertyBlock();
-
-        ApplyColours();
-    }
-#endif
-
-    public void ApplyColours()
+    public void ApplyColours() //Colour properties
     {
         if (meshRenderer == null)
             return;

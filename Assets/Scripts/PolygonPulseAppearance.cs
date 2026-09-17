@@ -20,20 +20,7 @@ public class PolygonPulseAppearance : MonoBehaviour
         meshRenderer.enabled = false;
     }
 
-#if UNITY_EDITOR
-    private void OnValidate()
-    {
-        if (meshRenderer == null)
-            meshRenderer = GetComponent<MeshRenderer>();
-
-        if (propertyBlock == null)
-            propertyBlock = new MaterialPropertyBlock();
-
-        ApplyColours();
-    }
-#endif
-
-    public void ApplyColours()
+    public void ApplyColours() //Colour proprty of pulse
     {
         if (meshRenderer == null)
             return;
@@ -50,7 +37,7 @@ public class PolygonPulseAppearance : MonoBehaviour
         AudioManager.Instance.PlayPulseSound();
     }
 
-    public IEnumerator PlayPulse()
+    public IEnumerator PlayPulse() //Enlarges and changes opacity of pulse based on curves defined in editor
     {
         float timeElapsed = 0f;
         Color colour = color;

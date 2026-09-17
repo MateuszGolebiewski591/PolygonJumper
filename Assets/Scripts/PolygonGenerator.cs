@@ -22,15 +22,15 @@ public class PolygonGenerator : MonoBehaviour
     void Awake()
     {
         polyCollider = GetComponentInChildren<PolygonCollider2D>();
-        mesh = new Mesh();
-        GetComponent<MeshFilter>().sharedMesh = mesh;
+        mesh = new Mesh(); 
+        GetComponent<MeshFilter>().sharedMesh = mesh; 
         DrawFilled(polygonSides,polygonRadius);  
-        if (pulseMesh) pulseMesh.sharedMesh = mesh;
+        if (pulseMesh) pulseMesh.sharedMesh = mesh; //Ensures mesh is shared across child objects required for pulse
     }
     
     #endregion
 
-    private int[] DrawFilledTriangles(Vector2[] points)
+    private int[] DrawFilledTriangles(Vector2[] points) //Creates list of points outlining triangles with point 0 being in the middle of the polygon
     {
         List<int> newTriangles = new List<int>();
         for(int i = 0; i < points.Length; i++)
@@ -47,10 +47,10 @@ public class PolygonGenerator : MonoBehaviour
         List<Vector2> points = new List<Vector2>();
         float circumferenceProgressPerStep = (float)1/sides;
         float TAU = 2*Mathf.PI;
-        float radianProgressPerStep = circumferenceProgressPerStep*TAU;
+        float radianProgressPerStep = circumferenceProgressPerStep*TAU; //Angle between polygon points
         float rotationalOffset = TAU * rotation/360f;
         
-        for(int i = 0; i<sides; i++)
+        for(int i = 0; i<sides; i++) //Creates a set of point based mapping to polygon corners
         {
             float currentRadian = radianProgressPerStep*i + rotationalOffset;
             points.Add(new Vector2(Mathf.Sin(currentRadian)*radius, Mathf.Cos(currentRadian)*radius));
@@ -68,12 +68,12 @@ public class PolygonGenerator : MonoBehaviour
         meshPoints.Add(Vector3.zero); // Add centre vertex
         foreach (Vector2 point in polygonPoints)// Add outside vertices
         {
-            meshPoints.Add(new Vector3(point.x, point.y, 0));
+            meshPoints.Add(new Vector3(point.x, point.y, 0)); //Converts to mesh vertices
         }
         mesh.vertices = meshPoints.ToArray();
         uvs = new Vector2[meshPoints.Count];
 
-        for(int i = 0; i < meshPoints.Count; i++)
+        for(int i = 0; i < meshPoints.Count; i++) //Translate to UV coordinates
         {
             Vector3 point = meshPoints[i];
             uvs[i] = new Vector2(
